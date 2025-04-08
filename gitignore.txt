@@ -1,0 +1,47 @@
+# Qt Creator specific files
+*.pro.user
+*.pro.user.*
+*.qmake.stash
+*.qmake.cache
+
+# Build directories
+build/
+debug/
+release/
+moc_*
+qrc_*
+
+# Compiled object files
+*.o
+*.obj
+*.lo
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+
+# IDE-specific files (Qt Creator, Visual Studio, etc.)
+.idea/
+.vscode/
+*.ncb
+*.suo
+*.user
+*.userosscache
+*.unsavedpp
+
+# System files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Logs
+*.log
+
+# Other generated files
+*.pro.user*
+
