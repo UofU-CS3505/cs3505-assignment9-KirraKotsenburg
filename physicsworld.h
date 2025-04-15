@@ -1,25 +1,41 @@
-// physicsworld.h
 #ifndef PHYSICSWORLD_H
 #define PHYSICSWORLD_H
 
-#include <box2d/box2d.h>
 #include "vehicle.h"
+#include "hazard.h"
+#include <box2d/box2d.h>
+#include <vector>
 
-class PhysicsWorld {
+// PhysicsWorld manages the Box2D physics world, vehicle, and hazards
+class PhysicsWorld
+{
 private:
-    b2World m_world;
-    float m_timeStep;
-    int m_velocityIterations;
-    int m_positionIterations;
-    Vehicle* m_vehicle;
+    b2World m_world;                     // Box2D physics world
+    float m_timeStep;                   // Simulation time step
+    int m_velocityIterations;          // Velocity constraint solver iterations
+    int m_positionIterations;          // Position constraint solver iterations
+
+    Vehicle *m_vehicle;                // The player's controllable vehicle
+    std::vector<Hazard*> m_hazards;   // List of hazardous plants in the world
 
 public:
+    // Constructor sets up world, vehicle, terrain, and hazards
     PhysicsWorld();
+
+    // Destructor cleans up dynamically allocated objects
     ~PhysicsWorld();
 
+    // Advances the physics simulation by one step
     void Step();
-    b2World& GetWorld();
-    Vehicle* GetVehicle() const;
+
+    // Returns a reference to the Box2D world
+    b2World &GetWorld();
+
+    // Returns a pointer to the vehicle
+    Vehicle *GetVehicle() const;
+
+    // Returns the list of hazards
+    const std::vector<Hazard*>& getHazards() const { return m_hazards; }
 };
 
 #endif // PHYSICSWORLD_H

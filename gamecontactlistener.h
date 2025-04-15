@@ -1,0 +1,24 @@
+#ifndef GAMECONTACTLISTENER_H
+#define GAMECONTACTLISTENER_H
+
+#include <box2d/box2d.h>
+#include "gameManager.h"
+
+// A contact listener that handles collision events in the physics world
+class GameContactListener : public b2ContactListener
+{
+private:
+    GameManager *m_gameManager; // Pointer to the game manager for handling game logic (e.g., health reduction)
+
+public:
+    // Constructor that initializes the listener with a reference to the game manager
+    GameContactListener(GameManager *gameManager);
+
+    // Called automatically when two Box2D bodies begin contact
+    virtual void BeginContact(b2Contact* contact) override;
+
+    // Called automatically when two Box2D bodies end contact
+    virtual void EndContact(b2Contact* contact) override;
+};
+
+#endif // GAMECONTACTLISTENER_H

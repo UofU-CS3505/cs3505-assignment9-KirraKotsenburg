@@ -9,7 +9,8 @@ home to many plants that could be used as remedies. However, it also harbors dea
 As the player ascends the mountain, they will encounter a variety of plants. Carefully avoid the poisonous ones, collect the right herbs, 
 and return safely to save your grandmother.
   
-## Features 
+## Features
+
   
 
 ## How to run
