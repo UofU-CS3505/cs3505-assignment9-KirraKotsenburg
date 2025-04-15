@@ -55,6 +55,9 @@ SOURCES += \
     Box2D/Dynamics/b2World.cpp \
     Box2D/Dynamics/b2WorldCallbacks.cpp \
     Box2D/Rope/b2Rope.cpp \
+    gamecontactlistener.cpp \
+    gamemanager.cpp \
+    hazard.cpp \
     main.cpp \
     mainwindow.cpp \
     physicsworld.cpp \
@@ -109,6 +112,9 @@ HEADERS += \
     Box2D/Dynamics/b2World.h \
     Box2D/Dynamics/b2WorldCallbacks.h \
     Box2D/Rope/b2Rope.h \
+    gamecontactlistener.h \
+    gamemanager.h \
+    hazard.h \
     mainwindow.h \
     physicsworld.h \
     vehicle.h \
