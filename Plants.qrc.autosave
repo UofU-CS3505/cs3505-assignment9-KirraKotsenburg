@@ -1,0 +1,4 @@
+<RCC>
+    <qresource prefix="/dangerous"/>
+    <qresource prefix="/safe"/>
+</RCC>
