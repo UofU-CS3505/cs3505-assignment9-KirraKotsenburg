@@ -36,5 +36,5 @@ void GameContactListener::update(float dt) {
 }
 
 void GameContactListener::EndContact(b2Contact* contact) {
-    // Optional: handle end of contact event if needed
+
 }
