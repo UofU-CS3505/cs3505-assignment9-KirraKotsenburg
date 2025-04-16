@@ -184,9 +184,6 @@ void WorldRenderer::keyPressEvent(QKeyEvent *event)
     case Qt::Key_Right:
         vehicle->ApplyDriveForce(100.0f);
         break;
-    default:
-        QWidget::keyPressEvent(event);
-        break;
     }
 }
 
@@ -203,9 +200,6 @@ void WorldRenderer::keyReleaseEvent(QKeyEvent *event)
     case Qt::Key_Up:
     case Qt::Key_Down:
         vehicle->ApplyDriveForce(0.0f); // Stop driving
-        break;
-    default:
-        QWidget::keyReleaseEvent(event);
         break;
     }
 }
