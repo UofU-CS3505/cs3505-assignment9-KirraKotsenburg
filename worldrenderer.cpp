@@ -12,7 +12,7 @@ WorldRenderer::WorldRenderer(QWidget *parent)
     m_gameManager = new GameManager(this);
 
     // Register custom contact listener to handle game logic on collisions
-    m_physicsWorld->GetWorld().SetContactListener(new GameContactListener(m_gameManager));
+    m_physicsWorld->GetWorld().SetContactListener(new GameContactListener(m_gameManager, m_physicsWorld));
 
     // Configure and start a timer to refresh screen at ~60 FPS
     m_timer = new QTimer(this);
@@ -27,11 +27,43 @@ WorldRenderer::~WorldRenderer()
 {
     delete m_timer;
     delete m_physicsWorld;
-    // m_gameManager is managed by Qt via parent-child hierarchy, so no need to delete manually
 }
 
 void WorldRenderer::paintEvent(QPaintEvent *event)
 {
+
+    auto drawHouse = [&](QPainter& painter, const QPointF& screenPos) {
+        painter.save();
+
+        const float scaleFactor = 3.0f;
+        const float width = m_scale * scaleFactor;
+        const float height = m_scale * scaleFactor;
+        const float roofHeight = 0.7f * m_scale * scaleFactor;
+
+        // 정확히 도로 위에 맞추는 위치 조정
+        QPointF adjustedPos = screenPos + QPointF(0, -height + m_scale * 0.85f);
+
+        painter.translate(adjustedPos);
+
+        // Draw base (square part)
+        QRectF base(-width / 2, 0, width, height);
+        painter.setBrush(Qt::gray);
+        painter.setPen(Qt::white);
+        painter.drawRect(base);
+
+        // Draw roof (triangle)
+        QPolygonF roof;
+        roof << QPointF(-width / 2 - 15, 0)
+             << QPointF(width / 2 + 15, 0)
+             << QPointF(0, -roofHeight);
+        painter.setBrush(Qt::darkRed);
+        painter.drawPolygon(roof);
+
+        painter.restore();
+    };
+
+
+
     Q_UNUSED(event);
     QPainter painter(this);
 
@@ -44,6 +76,7 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // Update physics and game state
     m_physicsWorld->Step();
+    m_physicsWorld->ProcessRemovalQueue();
     m_gameManager->update();
 
     // Camera follows the vehicle's chassis
@@ -55,21 +88,6 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         return QPointF((worldPos.x - camCenter.x) * m_scale + width() / 2,
                        height() / 2 - (worldPos.y - camCenter.y) * m_scale);
     };
-
-    // // --- Draw Road ---
-    // QPainterPath roadPath;
-    // roadPath.moveTo(worldToScreenCamera(b2Vec2(-50.0f, -5.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(-40.0f, -4.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(-30.0f, -1.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(-20.0f, 1.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(-10.0f, -2.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(0.0f, -1.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(10.0f, 2.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(20.0f, 0.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(30.0f, -1.0f)));
-    // roadPath.lineTo(worldToScreenCamera(b2Vec2(50.0f, 0.5f)));
-    // painter.drawPath(roadPath); // Draw as white wireframe
-
 
     // --- Draw Road ---
     QPainterPath roadPath;
@@ -103,6 +121,16 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // Draw the entire road path using the painter
     painter.drawPath(roadPath);
+
+    float startX = 0.0f;
+    float endX = 990.0f;       // 도로 길이 기준
+    float wallY = -1.0f;       // 도로 높이와 자연스럽게 맞춤
+
+    QPointF leftHousePos = worldToScreenCamera(b2Vec2(startX, wallY));
+    QPointF rightHousePos = worldToScreenCamera(b2Vec2(endX, wallY));
+
+    drawHouse(painter, leftHousePos);
+    drawHouse(painter, rightHousePos);
 
 
     // --- Draw Vehicle ---
