@@ -1,0 +1,32 @@
+<RCC>
+    <qresource prefix="/dangerous">
+        <file>Plants/Danger_Plants/baneberry.jpg</file>
+        <file>Plants/Danger_Plants/bittersweet_nightshade.jpg</file>
+        <file>Plants/Danger_Plants/death_camas.jpg</file>
+        <file>Plants/Danger_Plants/false_hellebore.jpg</file>
+        <file>Plants/Danger_Plants/jimson_weed.jpg</file>
+        <file>Plants/Danger_Plants/lupine_blue_bonnet.jpeg</file>
+        <file>Plants/Danger_Plants/monkshood_wolfbane.jpg</file>
+        <file>Plants/Danger_Plants/myrtle_spurge.jpg</file>
+        <file>Plants/Danger_Plants/oregon_grape.jpg</file>
+        <file>Plants/Danger_Plants/poison_hemlock.jpg</file>
+        <file>Plants/Danger_Plants/poison_ivy.jpg</file>
+        <file>Plants/Danger_Plants/snow_on_the_mountain.jpg</file>
+        <file>Plants/Danger_Plants/stinging_nettle.jpg</file>
+        <file>Plants/Danger_Plants/wart_weed.jpg</file>
+        <file>Plants/Danger_Plants/water_hemlock.jpg</file>
+    </qresource>
+    <qresource prefix="/safe">
+        <file>Plants/Safe_Plants/creosote_bush.jpg</file>
+        <file>Plants/Safe_Plants/golden_currant.jpg</file>
+        <file>Plants/Safe_Plants/mormon_tea.jpg</file>
+        <file>Plants/Safe_Plants/osha.jpg</file>
+        <file>Plants/Safe_Plants/prairie_flax.jpg</file>
+        <file>Plants/Safe_Plants/sacred_thornapple.jpg</file>
+        <file>Plants/Safe_Plants/sagebrush.jpg</file>
+        <file>Plants/Safe_Plants/snowberry.jpg</file>
+        <file>Plants/Safe_Plants/utah_juniper.jpg</file>
+        <file>Plants/Safe_Plants/yarrow.jpg</file>
+        <file>Plants/Safe_Plants/prickly_pear_cactus.jpg</file>
+    </qresource>
+</RCC>
