@@ -5,7 +5,6 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QLabel>
-#include "gamecontactlistener.h"
 #include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -72,9 +71,14 @@ void MainWindow::startGame()
 
 void MainWindow::handleGameStateChange(GameState newState)
 {
+    static bool showingPopup = false;
     switch(newState) {
     case GameOver:
-        showGameOverPopup();
+        if (!showingPopup) {
+            showingPopup = true;
+            showGameOverPopup();
+            showingPopup = false;
+        }
         break;
     case Playing:
         // Handle game start

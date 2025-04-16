@@ -7,7 +7,9 @@ GameContactListener::GameContactListener(GameManager *gameManager)
 }
 
 void GameContactListener::BeginContact(b2Contact* contact) {
-    // Skip if in cooldown
+
+    if (m_gameManager->gameState() != GameState::Playing) return;
+
     if (m_damageCooldown > 0) return;
 
     b2Body* bodyA = contact->GetFixtureA()->GetBody();

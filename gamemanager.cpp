@@ -18,8 +18,10 @@ void GameManager::startGame() {
 
 // End the game and change state to GameOver
 void GameManager::gameOver() {
-    m_gameState = GameOver;
-    emit stateChanged(m_gameState);
+    if (m_gameState != GameOver) { // Only emit if not already game over
+        m_gameState = GameOver;
+        emit stateChanged(m_gameState);
+    }
 }
 
 // Increase or decrease the score
@@ -29,10 +31,14 @@ void GameManager::updateScore(int delta) {
 
 // Decrease health, trigger game over if health drops to 0 or below
 void GameManager::damage(int amount) {
+    if (m_gameState != Playing) return; // Only allow damage during gameplay
+
     m_health -= amount;
     if (m_health <= 0) {
         m_health = 0;
-        gameOver();
+        if (m_gameState == Playing) { // Only trigger game over if we're still playing
+            gameOver();
+        }
     }
 }
 
