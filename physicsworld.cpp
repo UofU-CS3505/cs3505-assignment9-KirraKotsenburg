@@ -50,10 +50,31 @@ PhysicsWorld::PhysicsWorld()
         roadPoints[i] = b2Vec2(x, currentY);
     }
 
+
+
     // Create a Box2D chain shape using the generated points
     b2ChainShape roadChain;
     roadChain.CreateChain(roadPoints, roadPointCount);
     groundBody->CreateFixture(&roadChain, 0.0f);
+
+    // Create static wall at the beginning of the road
+    b2BodyDef leftWallDef;
+    leftWallDef.position.Set(0.0f, currentY); // use currentY after loop
+    b2Body* leftWall = m_world.CreateBody(&leftWallDef);
+
+    b2PolygonShape leftShape;
+    leftShape.SetAsBox(0.5f, 10.0f); // width 1m, height 20m
+    leftWall->CreateFixture(&leftShape, 0.0f);
+
+    // Create static wall at the end of the road
+    float endX = (roadPointCount - 1) * segmentWidth;
+    b2BodyDef rightWallDef;
+    rightWallDef.position.Set(endX, currentY); // same height
+    b2Body* rightWall = m_world.CreateBody(&rightWallDef);
+
+    b2PolygonShape rightShape;
+    rightShape.SetAsBox(0.5f, 10.0f);
+    rightWall->CreateFixture(&rightShape, 0.0f);
 
 
     // -----------------------------------------------------
