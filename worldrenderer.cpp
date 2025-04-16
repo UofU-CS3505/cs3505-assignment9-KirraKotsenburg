@@ -5,7 +5,7 @@
 
 WorldRenderer::WorldRenderer(QWidget *parent)
     : QWidget(parent)
-    , m_physicsWorld(new PhysicsWorld())
+    , m_physicsWorld(new PhysicsWorld(10))
     , m_scale(50.0f) // 50 pixels per meter
 {
     // Initialize GameManager

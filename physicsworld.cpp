@@ -1,13 +1,15 @@
 #include "physicsworld.h"
 #include "hazard.h"
 
-PhysicsWorld::PhysicsWorld()
+PhysicsWorld::PhysicsWorld(int hazardCount)
     : m_world(b2Vec2(0.0f, -9.8f))  // Set gravity: downward 9.8 m/s²
     , m_timeStep(1.0f / 60.0f)      // 60 FPS simulation
     , m_velocityIterations(6)
     , m_positionIterations(2)
     , m_contactListener(nullptr)
 {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
     // Create the player's vehicle at an initial position
     //m_vehicle = new Vehicle(m_world, b2Vec2(0.0f, 10.0f));
     m_vehicle = new Vehicle(m_world, b2Vec2(10.0f, 5.0f));
@@ -58,9 +60,42 @@ PhysicsWorld::PhysicsWorld()
 
     // -----------------------------------------------------
 
-    // Place poisonous plants (Hazard objects) at specific locations
-    m_hazards.push_back(new Hazard(m_world, b2Vec2(-15.0f, -2.0f)));
-    m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f)));
+    // Generate random hazards along the road
+    // Generate random hazards along the road
+    for (int i = 0; i < hazardCount; i++) {
+        // Generate a random X position along the road
+        // Limit the range to avoid placing hazards too close to the start
+        float minX = 15.0f;  // Minimum distance from start
+        float maxX = (roadPointCount - 1) * segmentWidth;  // Maximum x based on road length
+        float hazardX = minX + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxX - minX);
+
+        // Find the exact segment the hazard is on
+        int segmentIndex = static_cast<int>(hazardX / segmentWidth);
+
+        // Calculate exact position within segment (from 0.0 to 1.0)
+        float segmentPosition = (hazardX - segmentIndex * segmentWidth) / segmentWidth;
+
+        // Get the Y values at the start and end of this segment
+        float startY = -2.0f;
+        float endY = -2.0f;
+
+        // Calculate the Y values at segment start
+        for (int j = 0; j < segmentIndex; j++) {
+            startY += deltaY[j % segmentCount];
+        }
+
+        // Calculate the Y value at segment end
+        endY = startY + deltaY[segmentIndex % segmentCount];
+
+        // Interpolate between start and end Y values based on position within segment
+        float hazardY = startY + segmentPosition * (endY - startY);
+
+        // Add a consistent offset to ensure it's above the road
+        hazardY += 0.7f;
+
+        // Create the hazard at this position
+        m_hazards.push_back(new Hazard(m_world, b2Vec2(hazardX, hazardY)));
+    }
 }
 
 PhysicsWorld::~PhysicsWorld()
