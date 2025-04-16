@@ -8,28 +8,54 @@ PhysicsWorld::PhysicsWorld()
     , m_positionIterations(2)
 {
     // Create the player's vehicle at an initial position
-    m_vehicle = new Vehicle(m_world, b2Vec2(0.0f, 10.0f));
+    //m_vehicle = new Vehicle(m_world, b2Vec2(0.0f, 10.0f));
+    m_vehicle = new Vehicle(m_world, b2Vec2(10.0f, 5.0f));
+
 
     // Define static ground body to represent terrain
     b2BodyDef groundBodyDef;
     groundBodyDef.position.Set(0.0f, 0.0f);
     b2Body *groundBody = m_world.CreateBody(&groundBodyDef);
 
-    b2ChainShape roadChain;
-    const int roadPointCount = 10;
-    b2Vec2 roadPoints[roadPointCount] = { b2Vec2(-50.0f, -5.0f),
-                                         b2Vec2(-40.0f, -4.0f),
-                                         b2Vec2(-30.0f, -1.0f),
-                                         b2Vec2(-20.0f, 1.0f),
-                                         b2Vec2(-10.0f, -2.0f),
-                                         b2Vec2(0.0f, -1.0f),
-                                         b2Vec2(10.0f, 2.0f),
-                                         b2Vec2(20.0f, 0.0f),
-                                         b2Vec2(30.0f, -1.0f),
-                                         b2Vec2(50.0f, 0.5f) };
 
+    // part for making road---------------------------------
+    // Define smooth hill road pattern
+    const int segmentCount = 10;           // Number of points per pattern
+    const int repetitions = 10;            // How many times the pattern is repeated
+    const int roadPointCount = segmentCount * repetitions;
+    b2Vec2 roadPoints[roadPointCount];
+
+    // Y-coordinate changes (Δy) for each segment to create slope up and down
+    float deltaY[segmentCount] = {
+        0.0f,
+        0.5f,
+        1.0f,
+        1.2f,
+        1.0f,
+        -0.5f,
+        -1.0f,
+        -0.8f,
+        -0.5f,
+        -0.9f
+    };
+
+    float segmentWidth = 10.0f;  // Distance between each x point
+    float currentY = -2.0f;      // Initial y-position of the road
+
+    // Generate road points by accumulating y-values
+    for (int i = 0; i < roadPointCount; ++i) {
+        float x = i * segmentWidth;
+        currentY += deltaY[i % segmentCount];  // Accumulate y to make smooth transitions
+        roadPoints[i] = b2Vec2(x, currentY);
+    }
+
+    // Create a Box2D chain shape using the generated points
+    b2ChainShape roadChain;
     roadChain.CreateChain(roadPoints, roadPointCount);
     groundBody->CreateFixture(&roadChain, 0.0f);
+
+
+    // -----------------------------------------------------
 
     // Place poisonous plants (Hazard objects) at specific locations
     m_hazards.push_back(new Hazard(m_world, b2Vec2(-15.0f, -2.0f)));
