@@ -40,7 +40,6 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         const float height = m_scale * scaleFactor;
         const float roofHeight = 0.7f * m_scale * scaleFactor;
 
-        // 정확히 도로 위에 맞추는 위치 조정
         QPointF adjustedPos = screenPos + QPointF(0, -height + m_scale * 0.85f);
 
         painter.translate(adjustedPos);
@@ -123,8 +122,8 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     painter.drawPath(roadPath);
 
     float startX = 0.0f;
-    float endX = 990.0f;       // 도로 길이 기준
-    float wallY = -1.0f;       // 도로 높이와 자연스럽게 맞춤
+    float endX = 990.0f;       
+    float wallY = -1.0f;       
 
     QPointF leftHousePos = worldToScreenCamera(b2Vec2(startX, wallY));
     QPointF rightHousePos = worldToScreenCamera(b2Vec2(endX, wallY));
