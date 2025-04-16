@@ -31,6 +31,38 @@ WorldRenderer::~WorldRenderer()
 
 void WorldRenderer::paintEvent(QPaintEvent *event)
 {
+
+    auto drawHouse = [&](QPainter& painter, const QPointF& screenPos) {
+        painter.save();
+
+        const float scaleFactor = 3.0f;
+        const float width = m_scale * scaleFactor;
+        const float height = m_scale * scaleFactor;
+        const float roofHeight = 0.7f * m_scale * scaleFactor;
+
+        QPointF adjustedPos = screenPos + QPointF(0, -height + m_scale * 0.85f);
+
+        painter.translate(adjustedPos);
+
+        // Draw base (square part)
+        QRectF base(-width / 2, 0, width, height);
+        painter.setBrush(Qt::gray);
+        painter.setPen(Qt::white);
+        painter.drawRect(base);
+
+        // Draw roof (triangle)
+        QPolygonF roof;
+        roof << QPointF(-width / 2 - 15, 0)
+             << QPointF(width / 2 + 15, 0)
+             << QPointF(0, -roofHeight);
+        painter.setBrush(Qt::darkRed);
+        painter.drawPolygon(roof);
+
+        painter.restore();
+    };
+
+
+
     Q_UNUSED(event);
     QPainter painter(this);
 
@@ -88,6 +120,16 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // Draw the entire road path using the painter
     painter.drawPath(roadPath);
+
+    float startX = 0.0f;
+    float endX = 990.0f;       
+    float wallY = -1.0f;       
+
+    QPointF leftHousePos = worldToScreenCamera(b2Vec2(startX, wallY));
+    QPointF rightHousePos = worldToScreenCamera(b2Vec2(endX, wallY));
+
+    drawHouse(painter, leftHousePos);
+    drawHouse(painter, rightHousePos);
 
 
     // --- Draw Vehicle ---
