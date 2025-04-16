@@ -17,6 +17,10 @@ private:
 
     Vehicle *m_vehicle;                // The player's controllable vehicle
     std::vector<Hazard*> m_hazards;   // List of hazardous plants in the world
+    b2ContactListener* m_contactListener; // Contact listener for collision detection
+    std::vector<b2Body*> m_removeQueue; // Bodies queued for removal
+
+
 
 public:
     // Constructor sets up world, vehicle, terrain, and hazards
@@ -36,6 +40,12 @@ public:
 
     // Returns the list of hazards
     const std::vector<Hazard*>& getHazards() const { return m_hazards; }
+
+    void SetContactListener(b2ContactListener* listener);
+
+    void QueueForRemoval(b2Body* hazardBody);
+    void ProcessRemovalQueue();
+
 };
 
 #endif // PHYSICSWORLD_H
