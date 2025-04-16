@@ -61,3 +61,12 @@ Vehicle *PhysicsWorld::GetVehicle() const
 {
     return m_vehicle;
 }
+
+void PhysicsWorld::Reset() {
+    m_vehicle->Reset(b2Vec2(0.0f, 10.0f)); // Reset to initial position
+
+    // Reset any other physics objects if needed
+    for (auto hazard : m_hazards) {
+        hazard->reset(); // You'd need to implement this in Hazard class
+    }
+}

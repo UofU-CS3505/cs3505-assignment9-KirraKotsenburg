@@ -18,6 +18,8 @@ public:
 
     // Getter for the Box2D body
     b2Body* getBody() const { return m_body; }
+
+    void reset();
 };
 
 #endif // HAZARD_H

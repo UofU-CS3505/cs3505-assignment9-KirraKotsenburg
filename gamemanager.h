@@ -40,6 +40,8 @@ public:
     // Reduces player's health by the specified amount
     void damage(int amount);
 
+    void resetGame();
+
 public slots:
     // Called every frame (if needed for periodic updates)
     void update();

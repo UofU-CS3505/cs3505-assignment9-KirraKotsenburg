@@ -5,6 +5,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QLabel>
+#include "gamecontactlistener.h"
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -34,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *startButton = new QPushButton("START", menuWidget);
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startGame);
 
+
     menuLayout->addStretch();
     menuLayout->addWidget(titleLabel);
     menuLayout->addWidget(infoLabel);
@@ -41,7 +44,10 @@ MainWindow::MainWindow(QWidget *parent)
     menuLayout->addStretch();
 
     // ---------- Game Screen UI Setup ----------
-    WorldRenderer *gameWidget = new WorldRenderer(this);
+    gameWidget = new WorldRenderer(this);
+    connect(gameWidget->gameManager(), &GameManager::stateChanged,
+            this, &MainWindow::handleGameStateChange);
+
 
     // Add both screens to the stacked widget
     m_stackWidget->addWidget(menuWidget);   // index 0: menu
@@ -60,5 +66,44 @@ MainWindow::~MainWindow()
 // Switch to game screen when "START" is clicked
 void MainWindow::startGame()
 {
+    gameWidget->resetGame();
     m_stackWidget->setCurrentIndex(1);
 }
+
+void MainWindow::handleGameStateChange(GameState newState)
+{
+    switch(newState) {
+    case GameOver:
+        showGameOverPopup();
+        break;
+    case Playing:
+        // Handle game start
+        break;
+    case MainMenu:
+        m_stackWidget->setCurrentIndex(0);
+        break;
+    default:
+        break;
+    }
+}
+
+void MainWindow::showGameOverPopup()
+{
+
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Game Over");
+    msgBox.setText(QString("Your grandma didn't make it!\nFinal Score: %1")
+                       .arg(gameWidget->gameManager()->score()));
+
+    QPushButton* menuButton = msgBox.addButton("Return to Main Menu", QMessageBox::AcceptRole);
+
+    msgBox.exec();
+
+    // Since there's only one button, we don't need to check which was clicked
+    m_stackWidget->setCurrentIndex(0); // Return to main menu
+}
+
+
+
+
+

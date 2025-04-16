@@ -7,17 +7,31 @@ GameContactListener::GameContactListener(GameManager *gameManager)
 }
 
 void GameContactListener::BeginContact(b2Contact* contact) {
-    b2Body *bodyA = contact->GetFixtureA()->GetBody();
-    b2Body *bodyB = contact->GetFixtureB()->GetBody();
+    // Skip if in cooldown
+    if (m_damageCooldown > 0) return;
 
-    // Check for the "poisonous" tag using user data
-    void* dataA = bodyA->GetUserData();
-    void* dataB = bodyB->GetUserData();
+    b2Body* bodyA = contact->GetFixtureA()->GetBody();
+    b2Body* bodyB = contact->GetFixtureB()->GetBody();
 
-    if ((dataA && strcmp(static_cast<const char*>(dataA), "poisonous") == 0) ||
-        (dataB && strcmp(static_cast<const char*>(dataB), "poisonous") == 0)) {
-        // If collision is detected, reduce health (e.g., by 10)
+    // Check if either body is a hazard
+    bool isHazardA = bodyA->GetUserData() &&
+                     strcmp(static_cast<const char*>(bodyA->GetUserData()), "poisonous") == 0;
+    bool isHazardB = bodyB->GetUserData() &&
+                     strcmp(static_cast<const char*>(bodyB->GetUserData()), "poisonous") == 0;
+
+    if (isHazardA || isHazardB) {
         m_gameManager->damage(10);
+        m_damageCooldown = m_cooldownTime; // Start cooldown
+    }
+}
+
+void GameContactListener::PreSolve(b2Contact* contact, const b2Manifold* oldManifold) {
+    contact->SetEnabled(true);
+}
+
+void GameContactListener::update(float dt) {
+    if (m_damageCooldown > 0) {
+        m_damageCooldown -= dt;
     }
 }
 

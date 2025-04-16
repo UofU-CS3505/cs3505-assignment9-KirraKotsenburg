@@ -4,7 +4,7 @@ GameManager::GameManager(QObject *parent)
     : QObject(parent),
     m_gameState(MainMenu),
     m_score(0),
-    m_health(100)
+    m_health(20)
 {
 }
 
@@ -12,7 +12,7 @@ GameManager::GameManager(QObject *parent)
 void GameManager::startGame() {
     m_gameState = Playing;
     m_score = 0;
-    m_health = 100;
+    m_health = 20;
     emit stateChanged(m_gameState);
 }
 
@@ -38,4 +38,9 @@ void GameManager::damage(int amount) {
 
 // Per-frame logic can go here, currently unused
 void GameManager::update() {
+}
+
+void GameManager::resetGame() {
+    startGame(); // This already resets score and health
+    // Additional reset logic if needed
 }

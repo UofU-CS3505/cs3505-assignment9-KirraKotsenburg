@@ -1,5 +1,4 @@
 #include "worldrenderer.h"
-#include "mainwindow.h"
 #include <QPainterPath>
 #include <QFont>
 
@@ -11,8 +10,10 @@ WorldRenderer::WorldRenderer(QWidget *parent)
     // Initialize GameManager
     m_gameManager = new GameManager(this);
 
+    m_contactListener = (new GameContactListener(m_gameManager));
+
     // Register custom contact listener to handle game logic on collisions
-    m_physicsWorld->GetWorld().SetContactListener(new GameContactListener(m_gameManager));
+     m_physicsWorld->GetWorld().SetContactListener(m_contactListener);
 
     // Configure and start a timer to refresh screen at ~60 FPS
     m_timer = new QTimer(this);
@@ -35,8 +36,6 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
     QPainter painter(this);
 
-    // Clear screen with black background
-    painter.fillRect(rect(), Qt::black);
 
     // Set white stroke and no fill for wireframe drawing
     painter.setPen(Qt::white);
@@ -44,7 +43,7 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // Update physics and game state
     m_physicsWorld->Step();
-    m_gameManager->update();
+    m_contactListener->update(0.01f);
 
     // Camera follows the vehicle's chassis
     Vehicle *vehicle = m_physicsWorld->GetVehicle();
@@ -134,6 +133,8 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 // --- Handle Key Presses ---
 void WorldRenderer::keyPressEvent(QKeyEvent *event)
 {
+
+    m_physicsWorld->Step();
     Vehicle *vehicle = m_physicsWorld->GetVehicle();
 
     switch (event->key()) {
@@ -185,3 +186,9 @@ QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
 {
     return worldToScreen(position.x, position.y);
 }
+
+void WorldRenderer::resetGame() {
+    m_physicsWorld->Reset();
+    m_gameManager->resetGame();
+}
+

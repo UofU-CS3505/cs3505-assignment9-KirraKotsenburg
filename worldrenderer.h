@@ -21,9 +21,15 @@ private:
 
     GameManager *m_gameManager;   // Game state manager
 
+    GameContactListener *m_contactListener;
+
 public:
     explicit WorldRenderer(QWidget *parent = nullptr);
     ~WorldRenderer();
+
+    GameManager* gameManager() const { return m_gameManager; }
+
+    void resetGame();
 
 protected:
     void paintEvent(QPaintEvent *event) override;     // Called when the screen needs to be repainted
@@ -34,6 +40,8 @@ private:
     // Convert world coordinates to screen (pixel) coordinates
     QPointF worldToScreen(float x, float y);
     QPointF worldToScreen(const b2Vec2 &position);
+    const float m_timeStep = 1.0f/60.0f;
+
 };
 
 #endif // WORLDRENDERER_H

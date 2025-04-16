@@ -36,6 +36,9 @@ public:
 
     // Returns the list of hazards
     const std::vector<Hazard*>& getHazards() const { return m_hazards; }
+
+    // reset the world
+    void Reset();
 };
 
 #endif // PHYSICSWORLD_H
