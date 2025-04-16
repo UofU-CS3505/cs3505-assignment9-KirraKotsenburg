@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QLabel>
+#include <qmessagebox.h>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -41,7 +42,9 @@ MainWindow::MainWindow(QWidget *parent)
     menuLayout->addStretch();
 
     // ---------- Game Screen UI Setup ----------
-    WorldRenderer *gameWidget = new WorldRenderer(this);
+    gameWidget = new WorldRenderer(this);
+    connect(gameWidget->gameManager(), &GameManager::stateChanged,
+            this, &MainWindow::handleGameStateChange);
 
     // Add both screens to the stacked widget
     m_stackWidget->addWidget(menuWidget);   // index 0: menu
@@ -60,5 +63,44 @@ MainWindow::~MainWindow()
 // Switch to game screen when "START" is clicked
 void MainWindow::startGame()
 {
+    gameWidget->resetGame();
     m_stackWidget->setCurrentIndex(1);
+}
+
+void MainWindow::handleGameStateChange(GameState newState)
+{
+    static bool showingPopup = false;
+    switch(newState) {
+    case GameOver:
+        if (!showingPopup) {
+            showingPopup = true;
+            showGameOverPopup();
+            showingPopup = false;
+        }
+        break;
+    case Playing:
+        // Handle game start
+        break;
+    case MainMenu:
+        m_stackWidget->setCurrentIndex(0);
+        break;
+    default:
+        break;
+    }
+}
+
+void MainWindow::showGameOverPopup()
+{
+    if (findChild<QMessageBox*>()) {
+        return;
+    }
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Game Over");
+    msgBox.setText(QString("Your grandma didn't make it!\nFinal Score: %1")
+                       .arg(gameWidget->gameManager()->score()));
+
+    msgBox.addButton("Return to Main Menu", QMessageBox::AcceptRole);
+    msgBox.exec();
+
+    m_stackWidget->setCurrentIndex(0);
 }

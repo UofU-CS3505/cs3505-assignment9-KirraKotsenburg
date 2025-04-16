@@ -87,3 +87,24 @@ b2Body *Vehicle::GetWheel(int index) const
 {
     return m_wheels[index];
 }
+
+void Vehicle::Reset(const b2Vec2& position) {
+    const float forwardOffset = 2.0f;
+    b2Vec2 newPosition(position.x + forwardOffset, position.y);
+
+    // Reset chassis with new position
+    m_chassis->SetTransform(newPosition, 0.0f);
+    m_chassis->SetLinearVelocity(b2Vec2_zero);
+    m_chassis->SetAngularVelocity(0.0f);
+
+    // Reset wheels relative to new position
+    for (int i = 0; i < 2; ++i) {
+        b2Vec2 wheelPos = newPosition;
+        wheelPos.x += (i == 0 ? 1.0f : -1.0f); // Front/back offset
+        wheelPos.y -= 0.5f; // Below chassis
+
+        m_wheels[i]->SetTransform(wheelPos, 0.0f);
+        m_wheels[i]->SetLinearVelocity(b2Vec2_zero);
+        m_wheels[i]->SetAngularVelocity(0.0f);
+    }
+}

@@ -1,6 +1,7 @@
 #ifndef GAMEMANAGER_H
 #define GAMEMANAGER_H
 
+#include "qtimer.h"
 #include <QObject>
 
 // Enumeration for the various states of the game
@@ -20,6 +21,8 @@ private:
     int m_score;           // Player's score
     int m_health;          // Player's health (e.g., max 100)
 
+    QTimer m_collisionCooldown;
+    bool m_isInCooldown = false;
 public:
     explicit GameManager(QObject *parent = nullptr);
 
@@ -39,6 +42,8 @@ public:
 
     // Reduces player's health by the specified amount
     void damage(int amount);
+
+    void resetGame();
 
 public slots:
     // Called every frame (if needed for periodic updates)

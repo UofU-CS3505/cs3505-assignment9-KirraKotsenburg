@@ -21,9 +21,17 @@ private:
 
     GameManager *m_gameManager;   // Game state manager
 
+    GameContactListener *m_contactListener;
+
 public:
     explicit WorldRenderer(QWidget *parent = nullptr);
     ~WorldRenderer();
+    GameManager* gameManager() const { return m_gameManager; }
+    void resetGame();
+
+
+public slots:
+    void updateGameState();
 
 protected:
     void paintEvent(QPaintEvent *event) override;     // Called when the screen needs to be repainted

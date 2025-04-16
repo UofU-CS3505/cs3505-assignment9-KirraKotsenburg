@@ -46,6 +46,8 @@ public:
     void QueueForRemoval(b2Body* hazardBody);
     void ProcessRemovalQueue();
 
+    void Reset();
+
 };
 
 #endif // PHYSICSWORLD_H

@@ -1,5 +1,4 @@
 #include "worldrenderer.h"
-#include "mainwindow.h"
 #include <QPainterPath>
 #include <QFont>
 
@@ -16,7 +15,7 @@ WorldRenderer::WorldRenderer(QWidget *parent)
 
     // Configure and start a timer to refresh screen at ~60 FPS
     m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, QOverload<>::of(&WorldRenderer::update));
+    connect(m_timer, &QTimer::timeout, this, &WorldRenderer::updateGameState);
     m_timer->start(16);
 
     // Allow keyboard focus for input handling
@@ -198,4 +197,19 @@ QPointF WorldRenderer::worldToScreen(float x, float y)
 QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
 {
     return worldToScreen(position.x, position.y);
+}
+
+void WorldRenderer::resetGame() {
+    m_physicsWorld->Reset();
+    m_gameManager->resetGame();
+}
+
+void WorldRenderer::updateGameState()
+{
+    if(m_gameManager->gameState() == Playing) {
+        m_physicsWorld->Step();
+        m_physicsWorld->ProcessRemovalQueue();
+        m_gameManager->update();
+    }
+    update(); // Request repaint
 }

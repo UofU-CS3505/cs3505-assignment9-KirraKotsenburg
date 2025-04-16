@@ -25,3 +25,12 @@ Hazard::~Hazard()
 {
     // Note: Body destruction should be managed externally (e.g., by PhysicsWorld)
 }
+
+void Hazard::reset() {
+    // Since hazards are static bodies, we only need to reset their position
+    // No need to reset velocity as static bodies don't move
+    m_body->SetTransform(m_body->GetPosition(), 0.0f);
+
+    // If you want hazards to be exactly at their original positions,
+    // you'll need to store the initial position in the class
+}

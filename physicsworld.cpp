@@ -79,6 +79,7 @@ PhysicsWorld::~PhysicsWorld()
 void PhysicsWorld::Step()
 {
     m_world.Step(m_timeStep, m_velocityIterations, m_positionIterations);
+    ProcessRemovalQueue(); // Process removals AFTER the physics step
 }
 
 // Accessor for Box2D world
@@ -130,4 +131,13 @@ void PhysicsWorld::ProcessRemovalQueue() {
 
     // Clear the queue
     m_removeQueue.clear();
+}
+
+void PhysicsWorld::Reset() {
+    m_vehicle->Reset(b2Vec2(0.0f, 10.0f)); // Reset to initial position
+
+    // Reset any other physics objects if needed
+    for (auto hazard : m_hazards) {
+        hazard->reset(); // You'd need to implement this in Hazard class
+    }
 }
