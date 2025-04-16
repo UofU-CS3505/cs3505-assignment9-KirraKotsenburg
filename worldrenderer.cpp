@@ -56,19 +56,54 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
                        height() / 2 - (worldPos.y - camCenter.y) * m_scale);
     };
 
+    // // --- Draw Road ---
+    // QPainterPath roadPath;
+    // roadPath.moveTo(worldToScreenCamera(b2Vec2(-50.0f, -5.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(-40.0f, -4.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(-30.0f, -1.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(-20.0f, 1.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(-10.0f, -2.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(0.0f, -1.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(10.0f, 2.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(20.0f, 0.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(30.0f, -1.0f)));
+    // roadPath.lineTo(worldToScreenCamera(b2Vec2(50.0f, 0.5f)));
+    // painter.drawPath(roadPath); // Draw as white wireframe
+
+
     // --- Draw Road ---
     QPainterPath roadPath;
-    roadPath.moveTo(worldToScreenCamera(b2Vec2(-50.0f, -5.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(-40.0f, -4.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(-30.0f, -1.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(-20.0f, 1.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(-10.0f, -2.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(0.0f, -1.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(10.0f, 2.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(20.0f, 0.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(30.0f, -1.0f)));
-    roadPath.lineTo(worldToScreenCamera(b2Vec2(50.0f, 0.5f)));
-    painter.drawPath(roadPath); // Draw as white wireframe
+
+    // Get the list of bodies in the Box2D world
+    const auto& roadBody = m_physicsWorld->GetWorld().GetBodyList();
+
+    // Loop through all bodies in the world
+    for (b2Body* body = roadBody; body; body = body->GetNext()) {
+
+        // Loop through all fixtures of the body
+        for (b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext()) {
+
+            // Check if the fixture is a chain shape (used for the road)
+            if (f->GetType() == b2Shape::e_chain) {
+                b2ChainShape* chain = static_cast<b2ChainShape*>(f->GetShape());
+
+                // If the chain has points, start drawing
+                if (chain->m_count > 0) {
+                    // Move to the first point of the chain
+                    roadPath.moveTo(worldToScreenCamera(chain->m_vertices[0]));
+
+                    // Connect lines to each subsequent point
+                    for (int i = 1; i < chain->m_count; ++i) {
+                        roadPath.lineTo(worldToScreenCamera(chain->m_vertices[i]));
+                    }
+                }
+            }
+        }
+    }
+
+    // Draw the entire road path using the painter
+    painter.drawPath(roadPath);
+
 
     // --- Draw Vehicle ---
     // Chassis
@@ -149,9 +184,6 @@ void WorldRenderer::keyPressEvent(QKeyEvent *event)
     case Qt::Key_Right:
         vehicle->ApplyDriveForce(100.0f);
         break;
-    default:
-        QWidget::keyPressEvent(event);
-        break;
     }
 }
 
@@ -168,9 +200,6 @@ void WorldRenderer::keyReleaseEvent(QKeyEvent *event)
     case Qt::Key_Up:
     case Qt::Key_Down:
         vehicle->ApplyDriveForce(0.0f); // Stop driving
-        break;
-    default:
-        QWidget::keyReleaseEvent(event);
         break;
     }
 }
