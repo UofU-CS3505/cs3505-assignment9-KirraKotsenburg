@@ -6,6 +6,7 @@ PhysicsWorld::PhysicsWorld()
     , m_timeStep(1.0f / 60.0f)      // 60 FPS simulation
     , m_velocityIterations(6)
     , m_positionIterations(2)
+    , m_contactListener(nullptr)
 {
     // Create the player's vehicle at an initial position
     //m_vehicle = new Vehicle(m_world, b2Vec2(0.0f, 10.0f));
@@ -49,10 +50,31 @@ PhysicsWorld::PhysicsWorld()
         roadPoints[i] = b2Vec2(x, currentY);
     }
 
+
+
     // Create a Box2D chain shape using the generated points
     b2ChainShape roadChain;
     roadChain.CreateChain(roadPoints, roadPointCount);
     groundBody->CreateFixture(&roadChain, 0.0f);
+
+    // Create static wall at the beginning of the road
+    b2BodyDef leftWallDef;
+    leftWallDef.position.Set(0.0f, currentY); // use currentY after loop
+    b2Body* leftWall = m_world.CreateBody(&leftWallDef);
+
+    b2PolygonShape leftShape;
+    leftShape.SetAsBox(0.5f, 10.0f); // width 1m, height 20m
+    leftWall->CreateFixture(&leftShape, 0.0f);
+
+    // Create static wall at the end of the road
+    float endX = (roadPointCount - 1) * segmentWidth;
+    b2BodyDef rightWallDef;
+    rightWallDef.position.Set(endX, currentY); // same height
+    b2Body* rightWall = m_world.CreateBody(&rightWallDef);
+
+    b2PolygonShape rightShape;
+    rightShape.SetAsBox(0.5f, 10.0f);
+    rightWall->CreateFixture(&rightShape, 0.0f);
 
 
     // -----------------------------------------------------
@@ -68,6 +90,10 @@ PhysicsWorld::~PhysicsWorld()
     delete m_vehicle;
     for (Hazard* hazard : m_hazards)
         delete hazard;
+
+    if (m_contactListener) {
+        delete m_contactListener;
+    }
 }
 
 // Advance the simulation one time step
@@ -86,4 +112,43 @@ b2World &PhysicsWorld::GetWorld()
 Vehicle *PhysicsWorld::GetVehicle() const
 {
     return m_vehicle;
+}
+
+
+void PhysicsWorld::SetContactListener(b2ContactListener* listener) {
+    if (m_contactListener) {
+        delete m_contactListener;
+    }
+    m_contactListener = listener;
+    m_world.SetContactListener(listener);
+}
+
+void PhysicsWorld::QueueForRemoval(b2Body* hazardBody) {
+    // Add the body to the removal queue
+    m_removeQueue.push_back(hazardBody);
+}
+
+void PhysicsWorld::ProcessRemovalQueue() {
+    // Process all bodies queued for removal
+    for (auto it = m_removeQueue.begin(); it != m_removeQueue.end(); ++it) {
+        b2Body* bodyToRemove = *it;
+
+        // Find and remove the hazard from the hazards vector
+        for (auto hazardIt = m_hazards.begin(); hazardIt != m_hazards.end(); ++hazardIt) {
+            if ((*hazardIt)->getBody() == bodyToRemove) {
+                // Delete the hazard object
+                delete *hazardIt;
+
+                // Remove from vector
+                m_hazards.erase(hazardIt);
+                break;
+            }
+        }
+
+        // Now safely destroy the Box2D body
+        m_world.DestroyBody(bodyToRemove);
+    }
+
+    // Clear the queue
+    m_removeQueue.clear();
 }
