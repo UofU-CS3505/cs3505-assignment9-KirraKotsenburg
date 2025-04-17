@@ -18,9 +18,10 @@ void GameContactListener::BeginContact(b2Contact* contact) {
         (dataB && strcmp(static_cast<const char*>(dataB), "poisonous") == 0)) {
         // If collision is detected, reduce health (e.g., by 10)
         m_gameManager->damage(10);
+        emit plantContact();
     }
 }
 
-void GameContactListener::EndContact(b2Contact* contact) {
+void GameContactListener::EndContact(b2Contact* /*contact*/) {
     // Optional: handle end of contact event if needed
 }

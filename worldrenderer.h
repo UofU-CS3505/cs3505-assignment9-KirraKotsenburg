@@ -20,6 +20,7 @@ private:
     float m_scale;                // Pixels per meter (used for rendering)
 
     GameManager *m_gameManager;   // Game state manager
+    GameContactListener *gameContactListener;
 
 public:
     explicit WorldRenderer(QWidget *parent = nullptr);
@@ -29,6 +30,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;     // Called when the screen needs to be repainted
     void keyPressEvent(QKeyEvent *event) override;     // Handle key press input
     void keyReleaseEvent(QKeyEvent *event) override;   // Handle key release input
+    void showPlantPopup();
 
 private:
     // Convert world coordinates to screen (pixel) coordinates

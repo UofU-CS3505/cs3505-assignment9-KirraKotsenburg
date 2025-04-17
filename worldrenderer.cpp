@@ -2,6 +2,7 @@
 #include "mainwindow.h"
 #include <QPainterPath>
 #include <QFont>
+#include <QMessageBox>
 
 WorldRenderer::WorldRenderer(QWidget *parent)
     : QWidget(parent)
@@ -11,8 +12,10 @@ WorldRenderer::WorldRenderer(QWidget *parent)
     // Initialize GameManager
     m_gameManager = new GameManager(this);
 
+    gameContactListener = new GameContactListener(m_gameManager);
+
     // Register custom contact listener to handle game logic on collisions
-    m_physicsWorld->GetWorld().SetContactListener(new GameContactListener(m_gameManager));
+    m_physicsWorld->GetWorld().SetContactListener(gameContactListener);
 
     // Configure and start a timer to refresh screen at ~60 FPS
     m_timer = new QTimer(this);
@@ -21,6 +24,9 @@ WorldRenderer::WorldRenderer(QWidget *parent)
 
     // Allow keyboard focus for input handling
     setFocusPolicy(Qt::StrongFocus);
+    // In WorldRenderer constructor or init function:
+    connect(gameContactListener, &GameContactListener::plantContact, this, &WorldRenderer::showPlantPopup);
+
 }
 
 WorldRenderer::~WorldRenderer()
@@ -185,3 +191,18 @@ QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
 {
     return worldToScreen(position.x, position.y);
 }
+
+void WorldRenderer::showPlantPopup() {
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Mysterious Plant Found");
+    msgBox.setText("You've found a plant! Do you want to pick it?");
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::No);
+
+    int ret = msgBox.exec();
+
+    if (ret == QMessageBox::Yes) {
+        QMessageBox::information(this, "Plant Info", "This is Belladonna.\nIt's toxic but useful in small doses.");
+    }
+}
+
