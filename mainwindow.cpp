@@ -74,14 +74,16 @@ void MainWindow::handleGameStateChange(GameState newState)
     case GameOver:
         if (!showingPopup) {
             showingPopup = true;
+            gameWidget->pauseGame();  // Pause before showing popup
             showGameOverPopup();
             showingPopup = false;
         }
         break;
     case Playing:
-        // Handle game start
+        gameWidget->resumeGame();  // Resume when returning to game
         break;
     case MainMenu:
+        gameWidget->pauseGame();  // Pause before switching to menu
         m_stackWidget->setCurrentIndex(0);
         break;
     default:
@@ -94,6 +96,7 @@ void MainWindow::showGameOverPopup()
     // Prevent multiple dialogs
     if (findChild<QDialog*>()) return;
 
+    gameWidget->pauseGame();
     // Create a custom dialog
     QDialog *gameOverDialog = new QDialog(this);
     gameOverDialog->setWindowTitle("Game Over");
@@ -157,6 +160,7 @@ void MainWindow::showGameOverPopup()
     gameOverDialog->exec();
     //gameWidget->resumeGame(); // Implement resumeGame()
 
+    gameWidget->pauseGame();
     // Cleanup and return to menu
     m_stackWidget->setCurrentIndex(0);
     gameOverDialog->deleteLater();

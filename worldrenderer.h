@@ -26,8 +26,11 @@ private:
 public:
     explicit WorldRenderer(QWidget *parent = nullptr);
     ~WorldRenderer();
-    GameManager* gameManager() const { return m_gameManager; }
     void resetGame();
+    void resumeGame();
+    void pauseGame();
+    GameManager* gameManager() const { return m_gameManager; }
+
 
 
 public slots:

@@ -4,7 +4,7 @@
 
 WorldRenderer::WorldRenderer(QWidget *parent)
     : QWidget(parent)
-    , m_physicsWorld(new PhysicsWorld())
+    , m_physicsWorld(new PhysicsWorld()) // Limit to 15 hazards to prevent Box2D issues
     , m_scale(50.0f) // 50 pixels per meter
 {
     // Initialize GameManager
@@ -24,7 +24,12 @@ WorldRenderer::WorldRenderer(QWidget *parent)
 
 WorldRenderer::~WorldRenderer()
 {
-    delete m_timer;
+    // Make sure timer is stopped before cleanup
+    if (m_timer) {
+        m_timer->stop();
+        delete m_timer;
+    }
+
     delete m_physicsWorld;
 }
 
@@ -39,11 +44,6 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     // Set white stroke and no fill for wireframe drawing
     painter.setPen(Qt::white);
     painter.setBrush(Qt::NoBrush);
-
-    // Update physics and game state
-    m_physicsWorld->Step();
-    m_physicsWorld->ProcessRemovalQueue();
-    m_gameManager->update();
 
     // Camera follows the vehicle's chassis
     Vehicle *vehicle = m_physicsWorld->GetVehicle();
@@ -63,10 +63,8 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // Loop through all bodies in the world
     for (b2Body* body = roadBody; body; body = body->GetNext()) {
-
         // Loop through all fixtures of the body
         for (b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext()) {
-
             // Check if the fixture is a chain shape (used for the road)
             if (f->GetType() == b2Shape::e_chain) {
                 b2ChainShape* chain = static_cast<b2ChainShape*>(f->GetShape());
@@ -87,7 +85,6 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // Draw the entire road path using the painter
     painter.drawPath(roadPath);
-
 
     // --- Draw Vehicle ---
     // Chassis
@@ -148,11 +145,20 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         painter.setPen(Qt::red);
         painter.drawText(width() / 2 - 50, 50, "Warning: Poisonous Plant!");
     }
+
+    // Make sure painter is properly ended before returning
+    painter.end();
 }
 
 // --- Handle Key Presses ---
 void WorldRenderer::keyPressEvent(QKeyEvent *event)
 {
+    // Only process input if game is active
+    if (m_gameManager->gameState() != Playing) {
+        event->ignore();
+        return;
+    }
+
     Vehicle *vehicle = m_physicsWorld->GetVehicle();
 
     switch (event->key()) {
@@ -163,10 +169,13 @@ void WorldRenderer::keyPressEvent(QKeyEvent *event)
         vehicle->ApplyDriveForce(-100.0f);
         break;
     case Qt::Key_Left:
-        vehicle->ApplyDriveForce(-100.0f);
+        vehicle->ApplyDriveForce(-200.0f);
         break;
     case Qt::Key_Right:
-        vehicle->ApplyDriveForce(100.0f);
+        vehicle->ApplyDriveForce(200.0f);
+        break;
+    default:
+        event->ignore();
         break;
     }
 }
@@ -174,6 +183,12 @@ void WorldRenderer::keyPressEvent(QKeyEvent *event)
 // --- Handle Key Releases ---
 void WorldRenderer::keyReleaseEvent(QKeyEvent *event)
 {
+    // Only process input if game is active
+    if (m_gameManager->gameState() != Playing) {
+        event->ignore();
+        return;
+    }
+
     Vehicle *vehicle = m_physicsWorld->GetVehicle();
 
     switch (event->key()) {
@@ -184,6 +199,9 @@ void WorldRenderer::keyReleaseEvent(QKeyEvent *event)
     case Qt::Key_Up:
     case Qt::Key_Down:
         vehicle->ApplyDriveForce(0.0f); // Stop driving
+        break;
+    default:
+        event->ignore();
         break;
     }
 }
@@ -199,17 +217,62 @@ QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
     return worldToScreen(position.x, position.y);
 }
 
-void WorldRenderer::resetGame() {
-    m_physicsWorld->Reset();  // This now properly resets hazards
-    m_gameManager->resetGame();
+void WorldRenderer::resetGame()
+{
+    // Pause game first to prevent issues
+    pauseGame();
+
+    // Create a brand new physics world to avoid issues with reusing the old one
+    delete m_physicsWorld;
+    m_physicsWorld = new PhysicsWorld();
+
+    // Set up contact listener again
+    m_physicsWorld->GetWorld().SetContactListener(
+        new GameContactListener(m_gameManager, m_physicsWorld));
+
+    // Reset game state
+    if (m_gameManager) {
+        m_gameManager->startGame();
+    }
+
+    // Resume game
+    resumeGame();
+}
+
+void WorldRenderer::resumeGame()
+{
+    if (m_timer && !m_timer->isActive()) {
+        m_timer->start(16);
+    }
+}
+
+void WorldRenderer::pauseGame()
+{
+    if (m_timer && m_timer->isActive()) {
+        m_timer->stop();
+    }
 }
 
 void WorldRenderer::updateGameState()
 {
-    if(m_gameManager->gameState() == Playing) {
-        m_physicsWorld->Step();
-        m_physicsWorld->ProcessRemovalQueue();
-        m_gameManager->update();
+    if (m_gameManager->gameState() == Playing) {
+        try {
+            // Process physics updates
+            m_physicsWorld->Step();
+
+            // Process hazard removals after Step() completes
+            m_physicsWorld->ProcessRemovalQueue();
+
+            // Update game logic
+            m_gameManager->update();
+        }
+        catch (...) {
+            // If an exception occurs, safely pause the game
+            pauseGame();
+            // Could display an error message here
+        }
     }
-    update(); // Request repaint
+
+    // Always request a repaint
+    update();
 }
