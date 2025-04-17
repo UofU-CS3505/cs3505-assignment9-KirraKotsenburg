@@ -26,6 +26,9 @@ public:
 
     // Accessor for a specific wheel (0 = front, 1 = rear)
     b2Body *GetWheel(int index) const;
+
+    void Reset(const b2Vec2& position);
+
 };
 
 #endif // VEHICLE_H

@@ -25,3 +25,19 @@ Hazard::~Hazard()
 {
     // Note: Body destruction should be managed externally (e.g., by PhysicsWorld)
 }
+
+void Hazard::reset() {
+    // Reset to original position and reactivate
+    m_body->SetActive(true);
+
+    // Recreate fixture if it was removed
+    if(m_body->GetFixtureList() == nullptr) {
+        b2CircleShape circle;
+        circle.m_radius = m_radius;
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &circle;
+        fixtureDef.isSensor = true;
+        m_body->CreateFixture(&fixtureDef);
+    }
+}

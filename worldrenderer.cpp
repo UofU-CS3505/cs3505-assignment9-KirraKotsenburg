@@ -5,7 +5,7 @@
 
 WorldRenderer::WorldRenderer(QWidget *parent)
     : QWidget(parent)
-    , m_physicsWorld(new PhysicsWorld())
+    , m_physicsWorld(new PhysicsWorld(15)) // Limit to 15 hazards to prevent Box2D issues
     , m_scale(50.0f) // 50 pixels per meter
 {
     // Initialize GameManager
@@ -16,7 +16,9 @@ WorldRenderer::WorldRenderer(QWidget *parent)
 
     // Configure and start a timer to refresh screen at ~60 FPS
     m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, QOverload<>::of(&WorldRenderer::update));
+
+    connect(m_timer, &QTimer::timeout, this, &WorldRenderer::updateGameState);
+
     m_timer->start(16);
 
     // Allow keyboard focus for input handling
@@ -25,12 +27,47 @@ WorldRenderer::WorldRenderer(QWidget *parent)
 
 WorldRenderer::~WorldRenderer()
 {
-    delete m_timer;
+    if (m_timer) {
+        m_timer->stop();
+        delete m_timer;
+    }
     delete m_physicsWorld;
 }
 
 void WorldRenderer::paintEvent(QPaintEvent *event)
 {
+
+    auto drawHouse = [&](QPainter& painter, const QPointF& screenPos) {
+        painter.save();
+
+        const float scaleFactor = 3.0f;
+        const float width = m_scale * scaleFactor;
+        const float height = m_scale * scaleFactor;
+        const float roofHeight = 0.7f * m_scale * scaleFactor;
+
+        QPointF adjustedPos = screenPos + QPointF(0, -height + m_scale * 0.85f);
+
+        painter.translate(adjustedPos);
+
+        // Draw base (square part)
+        QRectF base(-width / 2, 0, width, height);
+        painter.setBrush(Qt::gray);
+        painter.setPen(Qt::white);
+        painter.drawRect(base);
+
+        // Draw roof (triangle)
+        QPolygonF roof;
+        roof << QPointF(-width / 2 - 15, 0)
+             << QPointF(width / 2 + 15, 0)
+             << QPointF(0, -roofHeight);
+        painter.setBrush(Qt::darkRed);
+        painter.drawPolygon(roof);
+
+        painter.restore();
+    };
+
+
+
     Q_UNUSED(event);
     QPainter painter(this);
 
@@ -40,11 +77,6 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     // Set white stroke and no fill for wireframe drawing
     painter.setPen(Qt::white);
     painter.setBrush(Qt::NoBrush);
-
-    // Update physics and game state
-    m_physicsWorld->Step();
-    m_physicsWorld->ProcessRemovalQueue();
-    m_gameManager->update();
 
     // Camera follows the vehicle's chassis
     Vehicle *vehicle = m_physicsWorld->GetVehicle();
@@ -88,6 +120,16 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // Draw the entire road path using the painter
     painter.drawPath(roadPath);
+
+    float startX = 0.0f;
+    float endX = 990.0f;       
+    float wallY = -1.0f;       
+
+    QPointF leftHousePos = worldToScreenCamera(b2Vec2(startX, wallY));
+    QPointF rightHousePos = worldToScreenCamera(b2Vec2(endX, wallY));
+
+    drawHouse(painter, leftHousePos);
+    drawHouse(painter, rightHousePos);
 
 
     // --- Draw Vehicle ---
@@ -149,6 +191,9 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         painter.setPen(Qt::red);
         painter.drawText(width() / 2 - 50, 50, "Warning: Poisonous Plant!");
     }
+
+    painter.end();
+
 }
 
 // --- Handle Key Presses ---
@@ -198,4 +243,65 @@ QPointF WorldRenderer::worldToScreen(float x, float y)
 QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
 {
     return worldToScreen(position.x, position.y);
+}
+
+
+void WorldRenderer::resetGame()
+{
+    // Pause game first to prevent issues
+    pauseGame();
+
+    // Create a brand new physics world to avoid issues with reusing the old one
+    delete m_physicsWorld;
+    m_physicsWorld = new PhysicsWorld(15);
+
+    // Set up contact listener again
+    m_physicsWorld->GetWorld().SetContactListener(
+        new GameContactListener(m_gameManager, m_physicsWorld));
+
+    // Reset game state
+    if (m_gameManager) {
+        m_gameManager->startGame();
+    }
+
+    // Resume game
+    resumeGame();
+}
+
+void WorldRenderer::resumeGame()
+{
+    if (m_timer && !m_timer->isActive()) {
+        m_timer->start(16);
+    }
+}
+
+void WorldRenderer::pauseGame()
+{
+    if (m_timer && m_timer->isActive()) {
+        m_timer->stop();
+    }
+}
+
+void WorldRenderer::updateGameState()
+{
+    if (m_gameManager->gameState() == Playing) {
+        try {
+            // Process physics updates
+            m_physicsWorld->Step();
+
+            // Process hazard removals after Step() completes
+            m_physicsWorld->ProcessRemovalQueue();
+
+            // Update game logic
+            m_gameManager->update();
+        }
+        catch (...) {
+            // If an exception occurs, safely pause the game
+            pauseGame();
+            // Could display an error message here
+        }
+    }
+
+    // Always request a repaint
+    update();
 }

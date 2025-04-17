@@ -25,6 +25,7 @@ private:
 public:
     // Constructor sets up world, vehicle, terrain, and hazards
     PhysicsWorld();
+    PhysicsWorld(int hazardCount = 10);
 
     // Destructor cleans up dynamically allocated objects
     ~PhysicsWorld();
@@ -45,6 +46,8 @@ public:
 
     void QueueForRemoval(b2Body* hazardBody);
     void ProcessRemovalQueue();
+
+    void Reset();
 
 };
 
