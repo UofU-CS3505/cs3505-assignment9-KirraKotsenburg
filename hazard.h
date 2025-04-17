@@ -18,12 +18,14 @@ public:
     QString type() const { return m_type; }
     QString description() const { return m_description; }
     QString imagePath() const { return m_imagePath; }
+    QString plantName() const { return m_plantName; }
 
 private:
     b2Body *m_body;
     QString m_type;        // "poisonous" or "safe"
     QString m_description;
     QString m_imagePath;
+    QString m_plantName;
 };
 
 

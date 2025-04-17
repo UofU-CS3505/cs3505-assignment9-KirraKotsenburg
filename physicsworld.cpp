@@ -33,6 +33,7 @@ PhysicsWorld::PhysicsWorld()
     roadChain.CreateChain(roadPoints, roadPointCount);
     groundBody->CreateFixture(&roadChain, 0.0f);
 
+    // TODO: parse the json file here to get plant info
     m_hazards.push_back(new Hazard(m_world, b2Vec2(15.0f, 0.5f), 1, "poison", "Bad plant", ":/Danger/Plants/Danger_Plants/poison_hemlock.jpg"));
     m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f), 1, "safe", "Good plant", ":/Safe/Plants/Safe_Plants/creosote_bush.jpg"));
     // Place poisonous plants (Hazard objects) at specific locations

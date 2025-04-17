@@ -3,6 +3,15 @@
 #include <QPainterPath>
 #include <QFont>
 #include <QMessageBox>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QPixmap>
+#include <QDebug>
+#include <QPointer>
+
 
 WorldRenderer::WorldRenderer(QWidget *parent)
     : QWidget(parent)
@@ -193,25 +202,55 @@ QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
 }
 
 void WorldRenderer::showPlantPopup(Hazard* hazard) {
-    QMessageBox msgBox;
-    msgBox.setWindowTitle("Mysterious Plant Found");
+    QDialog dialog;
+    dialog.setWindowTitle("Mysterious Plant Found");
+
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+
+    // Image
     QPixmap image(hazard->imagePath());
     if (image.isNull()) {
         qDebug() << "Failed to load image from path:" << hazard->imagePath();
     } else {
-        qDebug() << "Image loaded successfully from path:" << hazard->imagePath();
-        image = image.scaled(150, 150, Qt::KeepAspectRatio); // Scale the image
-        msgBox.setIconPixmap(image);
+        QLabel* imageLabel = new QLabel();
+        image = image.scaled(480, 480, Qt::KeepAspectRatio);
+        imageLabel->setPixmap(image);
+        imageLabel->setAlignment(Qt::AlignCenter);
+        layout->addWidget(imageLabel);
     }
 
-    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-    msgBox.setDefaultButton(QMessageBox::No);
+    // Text
+    QLabel* textLabel = new QLabel("Do you want to pick the plant?");
+    textLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(textLabel);
 
-    int ret = msgBox.exec();
+    // Buttons
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QPushButton* yesButton = new QPushButton("Yes");
+    QPushButton* noButton = new QPushButton("No");
+    buttonLayout->addWidget(yesButton);
+    buttonLayout->addWidget(noButton);
+    layout->addLayout(buttonLayout);
 
-    if (ret == QMessageBox::Yes) {
-        QMessageBox::information(this, "Plant Info", hazard->description());
+    QPointer<QDialog> dialogPtr = &dialog;
+
+    QObject::connect(yesButton, &QPushButton::clicked, this, [dialogPtr]() {
+        if(dialogPtr) dialogPtr->accept();
+    });
+
+    QObject::connect(noButton, &QPushButton::clicked, this, [dialogPtr]() {
+        if(dialogPtr) dialogPtr->reject();
+    });
+
+    int ret = dialog.exec();
+
+    if (ret == QDialog::Accepted) {
+        QMessageBox descriptionBox;
+        descriptionBox.setWindowTitle("Plant Info");
+        descriptionBox.setText(hazard->description());
+        descriptionBox.setIcon(QMessageBox::NoIcon);
+        descriptionBox.exec();
     }
-
 }
+
 
