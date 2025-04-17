@@ -19,13 +19,14 @@ void GameContactListener::BeginContact(b2Contact* contact) {
     if ((dataA && strcmp(static_cast<const char*>(dataA), "poisonous") == 0) ||
         (dataB && strcmp(static_cast<const char*>(dataB), "poisonous") == 0)) {
         // If collision is detected, reduce health
-        m_gameManager->damage(10);
+
 
         // Determine which body is the hazard
         b2Body* hazardBody = (dataA && strcmp(static_cast<const char*>(dataA), "poisonous") == 0) ? bodyA : bodyB;
 
         // Queue the hazard for removal instead of removing immediately
         m_physicsWorld->QueueForRemoval(hazardBody);
+        m_gameManager->damage(10);
     }
 }
 

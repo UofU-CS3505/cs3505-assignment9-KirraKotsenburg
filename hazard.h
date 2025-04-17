@@ -8,6 +8,8 @@ class Hazard
 {
 private:
     b2Body *m_body;  // The physical body representing the hazard
+    float m_radius;
+
 
 public:
     // Creates a static circular sensor body at the given position
@@ -18,6 +20,9 @@ public:
 
     // Getter for the Box2D body
     b2Body* getBody() const { return m_body; }
+
+    void reset();
+
 };
 
 #endif // HAZARD_H

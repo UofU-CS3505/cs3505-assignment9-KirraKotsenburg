@@ -20,10 +20,19 @@ private:
     float m_scale;                // Pixels per meter (used for rendering)
 
     GameManager *m_gameManager;   // Game state manager
+    GameContactListener *m_contactListener;
+
 
 public:
     explicit WorldRenderer(QWidget *parent = nullptr);
     ~WorldRenderer();
+    void resetGame();
+    void resumeGame();
+    void pauseGame();
+    GameManager* gameManager() const { return m_gameManager; }
+
+public slots:
+    void updateGameState();
 
 protected:
     void paintEvent(QPaintEvent *event) override;     // Called when the screen needs to be repainted

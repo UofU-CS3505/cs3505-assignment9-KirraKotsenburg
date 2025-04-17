@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <QStackedWidget>
+#include "gamemanager.h"
+#include "worldrenderer.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -20,6 +22,8 @@ public:
     // Destructor
     ~MainWindow();
 
+    void handleGameStateChange(GameState newState);
+
 private slots:
     // Slot to start the game when the "START" button is clicked
     void startGame();
@@ -29,6 +33,10 @@ private:
 
     // Widget stack for switching between menu and game views
     QStackedWidget *m_stackWidget;
+
+    WorldRenderer *gameWidget;
+
+    void showGameOverPopup();
 };
 
 #endif // MAINWINDOW_H
