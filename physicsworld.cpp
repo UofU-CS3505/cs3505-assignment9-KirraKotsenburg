@@ -82,8 +82,9 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
     // -----------------------------------------------------
 
     // Generate random hazards along the road
-    // Generate random hazards along the road
-    for (int i = 0; i < hazardCount; i++) {
+    int actualHazardCount = std::min(hazardCount, 15); // Cap at 15 hazards
+
+    for (int i = 0; i < actualHazardCount; i++) {
         // Generate a random X position along the road
         // Limit the range to avoid placing hazards too close to the start
         float minX = 15.0f;  // Minimum distance from start
@@ -164,11 +165,18 @@ void PhysicsWorld::QueueForRemoval(b2Body* hazardBody) {
 }
 
 void PhysicsWorld::ProcessRemovalQueue() {
-    // Process all bodies queued for removal
-    for (auto it = m_removeQueue.begin(); it != m_removeQueue.end(); ++it) {
+    // Process only a limited number of bodies per frame to avoid stressing Box2D
+    const int maxRemovalsPerFrame = 3;
+    int removalsThisFrame = 0;
+
+    // Create a temporary list of bodies we actually removed
+    std::vector<b2Body*> removedBodies;
+
+    for (auto it = m_removeQueue.begin(); it != m_removeQueue.end() && removalsThisFrame < maxRemovalsPerFrame;) {
         b2Body* bodyToRemove = *it;
 
         // Find and remove the hazard from the hazards vector
+        bool hazardFound = false;
         for (auto hazardIt = m_hazards.begin(); hazardIt != m_hazards.end(); ++hazardIt) {
             if ((*hazardIt)->getBody() == bodyToRemove) {
                 // Delete the hazard object
@@ -176,14 +184,27 @@ void PhysicsWorld::ProcessRemovalQueue() {
 
                 // Remove from vector
                 m_hazards.erase(hazardIt);
+                hazardFound = true;
                 break;
             }
         }
 
-        // Now safely destroy the Box2D body
-        m_world.DestroyBody(bodyToRemove);
+        if (hazardFound) {
+            // Now safely destroy the Box2D body
+            try {
+                m_world.DestroyBody(bodyToRemove);
+                removedBodies.push_back(bodyToRemove);
+                it = m_removeQueue.erase(it);
+                removalsThisFrame++;
+            }
+            catch (...) {
+                // If destruction fails, move to next body
+                ++it;
+            }
+        }
+        else {
+            // If hazard wasn't found, move to next body
+            ++it;
+        }
     }
-
-    // Clear the queue
-    m_removeQueue.clear();
 }
