@@ -134,10 +134,17 @@ void PhysicsWorld::ProcessRemovalQueue() {
 }
 
 void PhysicsWorld::Reset() {
-    m_vehicle->Reset(b2Vec2(0.0f, 10.0f)); // Reset to initial position
-
-    // Reset any other physics objects if needed
-    for (auto hazard : m_hazards) {
-        hazard->reset(); // You'd need to implement this in Hazard class
+    // Clear existing hazards
+    for(auto hazard : m_hazards) {
+        m_world.DestroyBody(hazard->getBody());
+        delete hazard;
     }
+    m_hazards.clear();
+
+    // Recreate initial hazards
+    m_hazards.push_back(new Hazard(m_world, b2Vec2(-15.0f, -2.0f)));
+    m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f)));
+
+    // Reset vehicle
+    m_vehicle->Reset(b2Vec2(0.0f, 10.0f));
 }

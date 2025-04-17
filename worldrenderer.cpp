@@ -200,7 +200,7 @@ QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
 }
 
 void WorldRenderer::resetGame() {
-    m_physicsWorld->Reset();
+    m_physicsWorld->Reset();  // This now properly resets hazards
     m_gameManager->resetGame();
 }
 

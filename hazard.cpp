@@ -2,6 +2,8 @@
 
 Hazard::Hazard(b2World &world, const b2Vec2 &position, float radius)
 {
+
+
     // Define a static body at the specified position
     b2BodyDef bodyDef;
     bodyDef.type = b2_staticBody;
@@ -27,10 +29,17 @@ Hazard::~Hazard()
 }
 
 void Hazard::reset() {
-    // Since hazards are static bodies, we only need to reset their position
-    // No need to reset velocity as static bodies don't move
-    m_body->SetTransform(m_body->GetPosition(), 0.0f);
+    // Reset to original position and reactivate
+    m_body->SetActive(true);
 
-    // If you want hazards to be exactly at their original positions,
-    // you'll need to store the initial position in the class
+    // Recreate fixture if it was removed
+    if(m_body->GetFixtureList() == nullptr) {
+        b2CircleShape circle;
+        circle.m_radius = m_radius;
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &circle;
+        fixtureDef.isSensor = true;
+        m_body->CreateFixture(&fixtureDef);
+    }
 }

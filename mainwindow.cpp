@@ -91,16 +91,73 @@ void MainWindow::handleGameStateChange(GameState newState)
 
 void MainWindow::showGameOverPopup()
 {
-    if (findChild<QMessageBox*>()) {
-        return;
-    }
-    QMessageBox msgBox;
-    msgBox.setWindowTitle("Game Over");
-    msgBox.setText(QString("Your grandma didn't make it!\nFinal Score: %1")
-                       .arg(gameWidget->gameManager()->score()));
+    // Prevent multiple dialogs
+    if (findChild<QDialog*>()) return;
 
-    msgBox.addButton("Return to Main Menu", QMessageBox::AcceptRole);
-    msgBox.exec();
+    // Create a custom dialog
+    QDialog *gameOverDialog = new QDialog(this);
+    gameOverDialog->setWindowTitle("Game Over");
+    gameOverDialog->setFixedSize(400, 300);
 
+    // Create layout
+    QVBoxLayout *layout = new QVBoxLayout(gameOverDialog);
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(15);
+
+    // Title
+    QLabel *titleLabel = new QLabel("Game Over", gameOverDialog);
+    titleLabel->setAlignment(Qt::AlignCenter);
+    QFont titleFont = titleLabel->font();
+    titleFont.setPointSize(24);
+    titleFont.setBold(true);
+    titleLabel->setFont(titleFont);
+
+    // Score display
+    QLabel *scoreLabel = new QLabel(QString("Final Score: %1").arg(gameWidget->gameManager()->score()), gameOverDialog);
+    scoreLabel->setAlignment(Qt::AlignCenter);
+    QFont scoreFont = scoreLabel->font();
+    scoreFont.setPointSize(18);
+    scoreLabel->setFont(scoreFont);
+
+    // Message
+    QLabel *messageLabel = new QLabel("Your grandma didn't make it!\nBetter luck next time!", gameOverDialog);
+    messageLabel->setAlignment(Qt::AlignCenter);
+    messageLabel->setWordWrap(true);
+
+    // Return button
+    QPushButton *returnButton = new QPushButton("Return to Main Menu", gameOverDialog);
+    returnButton->setFixedSize(200, 40);
+    connect(returnButton, &QPushButton::clicked, gameOverDialog, &QDialog::accept);
+
+    // Add widgets to layout
+    layout->addStretch();
+    layout->addWidget(titleLabel);
+    layout->addSpacing(20);
+    layout->addWidget(scoreLabel);
+    layout->addWidget(messageLabel);
+    layout->addStretch();
+    layout->addWidget(returnButton, 0, Qt::AlignCenter);
+
+    // Style the dialog
+    gameOverDialog->setStyleSheet(
+        "QDialog { background-color: #2c3e50; }"
+        "QLabel { color: #ecf0f1; }"
+        "QPushButton {"
+        "   background-color: #3498db;"
+        "   color: white;"
+        "   border: none;"
+        "   border-radius: 5px;"
+        "   font-size: 16px;"
+        "}"
+        "QPushButton:hover { background-color: #2980b9; }"
+        );
+
+    // Show dialog modally
+    //gameWidget->pauseGame();  // Make sure to implement pauseGame() in WorldRenderer
+    gameOverDialog->exec();
+    //gameWidget->resumeGame(); // Implement resumeGame()
+
+    // Cleanup and return to menu
     m_stackWidget->setCurrentIndex(0);
+    gameOverDialog->deleteLater();
 }
