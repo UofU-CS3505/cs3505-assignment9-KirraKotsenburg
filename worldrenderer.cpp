@@ -192,17 +192,26 @@ QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
     return worldToScreen(position.x, position.y);
 }
 
-void WorldRenderer::showPlantPopup() {
+void WorldRenderer::showPlantPopup(Hazard* hazard) {
     QMessageBox msgBox;
     msgBox.setWindowTitle("Mysterious Plant Found");
-    msgBox.setText("You've found a plant! Do you want to pick it?");
+    QPixmap image(hazard->imagePath());
+    if (image.isNull()) {
+        qDebug() << "Failed to load image from path:" << hazard->imagePath();
+    } else {
+        qDebug() << "Image loaded successfully from path:" << hazard->imagePath();
+        image = image.scaled(150, 150, Qt::KeepAspectRatio); // Scale the image
+        msgBox.setIconPixmap(image);
+    }
+
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msgBox.setDefaultButton(QMessageBox::No);
 
     int ret = msgBox.exec();
 
     if (ret == QMessageBox::Yes) {
-        QMessageBox::information(this, "Plant Info", "This is Belladonna.\nIt's toxic but useful in small doses.");
+        QMessageBox::information(this, "Plant Info", hazard->description());
     }
+
 }
 

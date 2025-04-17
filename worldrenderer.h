@@ -30,7 +30,7 @@ protected:
     void paintEvent(QPaintEvent *event) override;     // Called when the screen needs to be repainted
     void keyPressEvent(QKeyEvent *event) override;     // Handle key press input
     void keyReleaseEvent(QKeyEvent *event) override;   // Handle key release input
-    void showPlantPopup();
+    void showPlantPopup(Hazard* hazard);
 
 private:
     // Convert world coordinates to screen (pixel) coordinates

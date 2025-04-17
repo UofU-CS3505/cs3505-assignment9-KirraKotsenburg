@@ -1,5 +1,7 @@
 #include "physicsworld.h"
 #include "hazard.h"
+#include <QFile>
+#include <QJsonDocument>
 
 PhysicsWorld::PhysicsWorld()
     : m_world(b2Vec2(0.0f, -9.8f))  // Set gravity: downward 9.8 m/s²
@@ -31,9 +33,11 @@ PhysicsWorld::PhysicsWorld()
     roadChain.CreateChain(roadPoints, roadPointCount);
     groundBody->CreateFixture(&roadChain, 0.0f);
 
+    m_hazards.push_back(new Hazard(m_world, b2Vec2(15.0f, 0.5f), 1, "poison", "Bad plant", ":/Danger/Plants/Danger_Plants/poison_hemlock.jpg"));
+    m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f), 1, "safe", "Good plant", ":/Safe/Plants/Safe_Plants/creosote_bush.jpg"));
     // Place poisonous plants (Hazard objects) at specific locations
-    m_hazards.push_back(new Hazard(m_world, b2Vec2(-15.0f, -2.0f)));
-    m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f)));
+    // m_hazards.push_back(new Hazard(m_world, b2Vec2(-15.0f, -2.0f)));
+    // m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f)));
 }
 
 PhysicsWorld::~PhysicsWorld()
