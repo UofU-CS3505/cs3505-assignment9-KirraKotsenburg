@@ -2,6 +2,7 @@
 #include "gameContactListener.h"
 #include <cstring>
 #include "physicsworld.h"
+#include <QDebug>
 
 GameContactListener::GameContactListener(GameManager *gameManager, PhysicsWorld *physicsWorld)
     : m_gameManager(gameManager), m_physicsWorld(physicsWorld)
@@ -12,23 +13,24 @@ void GameContactListener::BeginContact(b2Contact* contact) {
     b2Body *bodyA = contact->GetFixtureA()->GetBody();
     b2Body *bodyB = contact->GetFixtureB()->GetBody();
 
-    // Check for the "poisonous" tag using user data
-    void* dataA = bodyA->GetUserData();
-    void* dataB = bodyB->GetUserData();
+    Hazard* hazard = nullptr;
 
-    if ((dataA && strcmp(static_cast<const char*>(dataA), "poisonous") == 0) ||
-        (dataB && strcmp(static_cast<const char*>(dataB), "poisonous") == 0)) {
-        // If collision is detected, reduce health
+    if (bodyA->GetUserData()) hazard = static_cast<Hazard*>(bodyA->GetUserData());
+    else if (bodyB->GetUserData()) hazard = static_cast<Hazard*>(bodyB->GetUserData());
 
-
-        // Determine which body is the hazard
-        b2Body* hazardBody = (dataA && strcmp(static_cast<const char*>(dataA), "poisonous") == 0) ? bodyA : bodyB;
-
-        // Queue the hazard for removal instead of removing immediately
-        m_physicsWorld->QueueForRemoval(hazardBody);
-        m_gameManager->damage(10);
+    if (hazard) {
+        if (hazard->type() == "poisonous") {
+            // Queue the hazard's body for removal
+              // assuming getBody() gives the associated b2Body*
+            m_physicsWorld->QueueForRemoval(hazard->getBody());
+            //m_gameManager->damage(10);
+        }
+        qDebug() << "About to emit!";
+        emit plantContact(hazard);
+        //m_physicsWorld->QueueForRemoval(hazard->getBody());
     }
 }
+
 
 void GameContactListener::EndContact(b2Contact* contact) {
     // Optional: handle end of contact event if needed

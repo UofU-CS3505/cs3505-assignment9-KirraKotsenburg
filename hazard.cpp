@@ -1,6 +1,8 @@
 #include "hazard.h"
 
-Hazard::Hazard(b2World &world, const b2Vec2 &position, float radius)
+Hazard::Hazard(b2World &world, const b2Vec2 &position, float radius,
+               const QString &type, const QString &desc, const QString &imgPath)
+    :  m_radius(radius), m_type(type), m_description(desc), m_imagePath(imgPath)
 {
     // Define a static body at the specified position
     b2BodyDef bodyDef;
@@ -18,7 +20,7 @@ Hazard::Hazard(b2World &world, const b2Vec2 &position, float radius)
     m_body->CreateFixture(&fixtureDef);
 
     // Tag the body with user data to identify it during collision events
-    m_body->SetUserData((void*)"poisonous");
+    m_body->SetUserData(this);
 }
 
 Hazard::~Hazard()
