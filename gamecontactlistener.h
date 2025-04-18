@@ -2,17 +2,23 @@
 #ifndef GAMECONTACTLISTENER_H
 #define GAMECONTACTLISTENER_H
 
+#include <QObject>
 #include <box2d/box2d.h>
 #include "gameManager.h"
+#include "hazard.h"
 
 // Forward declaration
 class PhysicsWorld;
 
-class GameContactListener : public b2ContactListener
+class GameContactListener : public QObject, public b2ContactListener
 {
+    Q_OBJECT
 private:
     GameManager *m_gameManager;
     PhysicsWorld *m_physicsWorld;
+
+signals:
+    void plantContact(Hazard *hazard);
 
 public:
     GameContactListener(GameManager *gameManager, PhysicsWorld *physicsWorld);

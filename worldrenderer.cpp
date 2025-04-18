@@ -2,6 +2,15 @@
 #include "mainwindow.h"
 #include <QPainterPath>
 #include <QFont>
+#include <QMessageBox>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QPixmap>
+#include <QDebug>
+#include <QPointer>
 
 WorldRenderer::WorldRenderer(QWidget *parent)
     : QWidget(parent)
@@ -12,7 +21,8 @@ WorldRenderer::WorldRenderer(QWidget *parent)
     m_gameManager = new GameManager(this);
 
     // Register custom contact listener to handle game logic on collisions
-    m_physicsWorld->GetWorld().SetContactListener(new GameContactListener(m_gameManager, m_physicsWorld));
+    m_contactListener = new GameContactListener(m_gameManager, m_physicsWorld);
+    m_physicsWorld->GetWorld().SetContactListener(m_contactListener);
 
     // Configure and start a timer to refresh screen at ~60 FPS
     m_timer = new QTimer(this);
@@ -23,6 +33,7 @@ WorldRenderer::WorldRenderer(QWidget *parent)
 
     // Allow keyboard focus for input handling
     setFocusPolicy(Qt::StrongFocus);
+    connect(m_contactListener, &GameContactListener::plantContact, this, &WorldRenderer::showPlantPopup);
 }
 
 WorldRenderer::~WorldRenderer()
@@ -189,7 +200,7 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     // Warning message if health is low
     if (m_gameManager->health() < 50) {
         painter.setPen(Qt::red);
-        painter.drawText(width() / 2 - 50, 50, "Warning: Poisonous Plant!");
+        //painter.drawText(width() / 2 - 50, 50, "Warning: Poisonous Plant!");
     }
 
     painter.end();
@@ -254,11 +265,11 @@ void WorldRenderer::resetGame()
     // Create a brand new physics world to avoid issues with reusing the old one
     delete m_physicsWorld;
     m_physicsWorld = new PhysicsWorld(15);
-
+    m_contactListener = new GameContactListener(m_gameManager, m_physicsWorld);
     // Set up contact listener again
-    m_physicsWorld->GetWorld().SetContactListener(
-        new GameContactListener(m_gameManager, m_physicsWorld));
+    m_physicsWorld->GetWorld().SetContactListener(m_contactListener);
 
+    connect(m_contactListener, &GameContactListener::plantContact, this, &WorldRenderer::showPlantPopup);
     // Reset game state
     if (m_gameManager) {
         m_gameManager->startGame();
@@ -304,4 +315,57 @@ void WorldRenderer::updateGameState()
 
     // Always request a repaint
     update();
+}
+
+void WorldRenderer::showPlantPopup(Hazard* hazard) {
+    QDialog dialog;
+    qDebug() << "Popup slot triggered!";
+    dialog.setWindowTitle("Mysterious Plant Found");
+
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+
+    // Image
+    QPixmap image(hazard->imagePath());
+    if (image.isNull()) {
+        qDebug() << "Failed to load image from path:" << hazard->imagePath();
+    } else {
+        QLabel* imageLabel = new QLabel();
+        image = image.scaled(480, 480, Qt::KeepAspectRatio);
+        imageLabel->setPixmap(image);
+        imageLabel->setAlignment(Qt::AlignCenter);
+        layout->addWidget(imageLabel);
+    }
+
+    // Text
+    QLabel* textLabel = new QLabel("Do you want to pick the plant?");
+    textLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(textLabel);
+
+    // Buttons
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QPushButton* yesButton = new QPushButton("Yes");
+    QPushButton* noButton = new QPushButton("No");
+    buttonLayout->addWidget(yesButton);
+    buttonLayout->addWidget(noButton);
+    layout->addLayout(buttonLayout);
+
+    QPointer<QDialog> dialogPtr = &dialog;
+
+    QObject::connect(yesButton, &QPushButton::clicked, this, [dialogPtr]() {
+        if(dialogPtr) dialogPtr->accept();
+    });
+
+    QObject::connect(noButton, &QPushButton::clicked, this, [dialogPtr]() {
+        if(dialogPtr) dialogPtr->reject();
+    });
+
+    int ret = dialog.exec();
+
+    if (ret == QDialog::Accepted) {
+        QMessageBox descriptionBox;
+        descriptionBox.setWindowTitle("Plant Info");
+        descriptionBox.setText(hazard->description());
+        descriptionBox.setIcon(QMessageBox::NoIcon);
+        descriptionBox.exec();
+    }
 }

@@ -29,4 +29,7 @@
         <file>Plants/Safe_Plants/yarrow.jpg</file>
         <file>Plants/Safe_Plants/prickly_pear_cactus.jpg</file>
     </qresource>
+    <qresource prefix="/json">
+        <file>Plants/plants.json</file>
+    </qresource>
 </RCC>
