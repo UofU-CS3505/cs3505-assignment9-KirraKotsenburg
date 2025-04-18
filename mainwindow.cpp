@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Create a QStackedWidget: index 0 = Main Menu, index 1 = Game
+    // Create a QStackedWidget: index 0 = Main Menu, index 1 = Tutorial, index 2 = Game
     m_stackWidget = new QStackedWidget(this);
     setCentralWidget(m_stackWidget);
 
@@ -105,7 +105,7 @@ MainWindow::MainWindow(QWidget *parent)
     warningText->setAlignment(Qt::AlignLeft);
 
     // OK button
-    QPushButton *proceedButton = new QPushButton("START GAME", tutorialWidget);
+    QPushButton *proceedButton = new QPushButton("OK", tutorialWidget);
     proceedButton->setFixedSize(150, 40);
     connect(proceedButton, &QPushButton::clicked, this, &MainWindow::tutorialPage);
 
