@@ -116,7 +116,7 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
         hazardY += 0.7f;
 
         // Create the hazard at this position
-        m_hazards.push_back(new Hazard(m_world, b2Vec2(hazardX, hazardY)));
+        m_hazards.push_back(new Hazard(m_world, b2Vec2(hazardX, hazardY), 1.0, "poisonous", "bad plant", ":/dangerous/Plants/Danger_Plants/baneberry.jpg"));
     }
 }
 
@@ -219,8 +219,8 @@ void PhysicsWorld::Reset() {
     m_hazards.clear();
 
     // Recreate initial hazards
-    m_hazards.push_back(new Hazard(m_world, b2Vec2(-15.0f, -2.0f)));
-    m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f)));
+    m_hazards.push_back(new Hazard(m_world, b2Vec2(-15.0f, -2.0f), 1.0, "poisonous", "bad plant", ":/dangerous/Plants/Danger_Plants/baneberry.jpg"));
+    m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f), 1.0, "poisonous", "bad plant", ":/dangerous/Plants/Danger_Plants/death_camas.jpg"));
 
     // Reset vehicle
     m_vehicle->Reset(b2Vec2(0.0f, 10.0f));
