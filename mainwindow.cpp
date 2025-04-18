@@ -34,13 +34,112 @@ MainWindow::MainWindow(QWidget *parent)
     infoLabel->setAlignment(Qt::AlignCenter);
 
     QPushButton *startButton = new QPushButton("START", menuWidget);
+    startButton->setFixedSize(150, 40);
+
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startGame);
 
     menuLayout->addStretch();
     menuLayout->addWidget(titleLabel);
     menuLayout->addWidget(infoLabel);
-    menuLayout->addWidget(startButton);
+    menuLayout->addWidget(startButton, 0, Qt::AlignCenter);
     menuLayout->addStretch();
+
+
+    menuWidget->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #3498db;"
+        "   color: white;"
+        "   border: none;"
+        "   border-radius: 5px;"
+        "   font-size: 16px;"
+        "}"
+        "QPushButton:hover { background-color: #2980b9; }"
+    );
+
+    // ---------- Tutorial Page UI Setup ----------
+    QWidget *tutorialWidget = new QWidget(this);
+    QVBoxLayout *tutorialLayout = new QVBoxLayout(tutorialWidget);
+
+    // Title
+    QLabel *tutorialTitle = new QLabel("TUTORIAL", tutorialWidget);
+    tutorialTitle->setAlignment(Qt::AlignCenter);
+    tutorialTitle->setFont(titleFont);
+
+    // Purpose section
+    QLabel *purposeLabel = new QLabel("Purpose of the Game:", tutorialWidget);
+    purposeLabel->setFont(QFont(purposeLabel->font().family(), 14, QFont::Bold));
+
+    QLabel *purposeText = new QLabel("The purpose of this game is to educate about Utah's poisonous plants. \n"
+                                     "Through gameplay, you will learn to identify various herbs and poisonous \n"
+                                     "plants native to Utah. This knowledge could be valuable in real-life situations.",
+                                     tutorialWidget);
+    purposeText->setWordWrap(true);
+    purposeText->setAlignment(Qt::AlignLeft);
+
+    // How to play section
+    QLabel *howToPlayLabel = new QLabel("How To Play:", tutorialWidget);
+    howToPlayLabel->setFont(QFont(howToPlayLabel->font().family(), 14, QFont::Bold));
+
+    QLabel *howToPlayText = new QLabel("Use the LEFT and RIGHT arrow keys to move your vehicle. \n"
+                                       "When you encounter a plant, you must decide whether to collect it or avoid it. \n"
+                                       "Collect beneficial herbs but avoid poisonous plants! \n"
+                                       "Get to the house your grandmother is waiting for while collecting plants!",
+                                       tutorialWidget);
+    howToPlayText->setWordWrap(true);
+    howToPlayText->setAlignment(Qt::AlignLeft);
+
+    // Goal section
+    QLabel *goalLabel = new QLabel("Goal of the Game:", tutorialWidget);
+    goalLabel->setFont(QFont(goalLabel->font().family(), 14, QFont::Bold));
+
+    QLabel *goalText = new QLabel("Put it later~", tutorialWidget);
+    goalText->setWordWrap(true);
+    goalText->setAlignment(Qt::AlignLeft);
+
+    // Warning Section
+    QLabel *warningLabel = new QLabel("WARNING", tutorialWidget);
+    goalLabel->setFont(QFont(goalLabel->font().family(), 14, QFont::Bold));
+
+    QLabel *warningText = new QLabel("Don't eat those plants outside unless you're a professional forager.");
+    warningText->setWordWrap(true);
+    warningText->setAlignment(Qt::AlignLeft);
+
+    // OK button
+    QPushButton *proceedButton = new QPushButton("START GAME", tutorialWidget);
+    proceedButton->setFixedSize(150, 40);
+    connect(proceedButton, &QPushButton::clicked, this, &MainWindow::tutorialPage);
+
+    // Add widgets to layout with proper spacing
+    tutorialLayout->addStretch();
+    tutorialLayout->addWidget(tutorialTitle);
+    tutorialLayout->addSpacing(20);
+    tutorialLayout->addWidget(purposeLabel);
+    tutorialLayout->addWidget(purposeText);
+    tutorialLayout->addSpacing(15);
+    tutorialLayout->addWidget(howToPlayLabel);
+    tutorialLayout->addWidget(howToPlayText);
+    tutorialLayout->addSpacing(15);
+    tutorialLayout->addWidget(goalLabel);
+    tutorialLayout->addWidget(goalText);
+    tutorialLayout->addSpacing(15);
+    tutorialLayout->addWidget(warningLabel);
+    tutorialLayout->addWidget(warningText);
+    tutorialLayout->addSpacing(20);
+    tutorialLayout->addWidget(proceedButton, 0, Qt::AlignCenter);
+    tutorialLayout->addStretch();
+
+
+    tutorialWidget->setStyleSheet(
+
+        "QPushButton {"
+        "   background-color: #3498db;"
+        "   color: white;"
+        "   border: none;"
+        "   border-radius: 5px;"
+        "   font-size: 16px;"
+        "}"
+        "QPushButton:hover { background-color: #2980b9; }"
+    );
 
     // ---------- Game Screen UI Setup ----------
     gameWidget = new WorldRenderer(this);
@@ -48,11 +147,12 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::handleGameStateChange);
 
     // Add both screens to the stacked widget
-    m_stackWidget->addWidget(menuWidget);   // index 0: menu
-    m_stackWidget->addWidget(gameWidget);   // index 1: gameplay
+    m_stackWidget->addWidget(menuWidget);   // index 0: Main=Menu
+    m_stackWidget->addWidget(tutorialWidget);   // index 1: tutorial
+    m_stackWidget->addWidget(gameWidget);   // index 1: gamePlay
 
     // Set window size and title
-    resize(800, 600);
+    resize(1200, 600);
     setWindowTitle("Save Sick Grandma");
 }
 
@@ -64,9 +164,13 @@ MainWindow::~MainWindow()
 // Switch to game screen when "START" is clicked
 void MainWindow::startGame()
 {
-    gameWidget->resetGame();
 
     m_stackWidget->setCurrentIndex(1);
+}
+
+void MainWindow::tutorialPage(){
+    gameWidget->resetGame();
+    m_stackWidget->setCurrentIndex(2);
 }
 
 void MainWindow::handleGameStateChange(GameState newState)

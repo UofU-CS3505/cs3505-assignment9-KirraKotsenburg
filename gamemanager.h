@@ -34,6 +34,9 @@ public:
     // Sets the game state to GameOver and emits state change
     void gameOver();
 
+    // Set the game state to tutorial
+    void tutorial();
+
     // Updates the player's score by a delta value
     void updateScore(int delta);
 

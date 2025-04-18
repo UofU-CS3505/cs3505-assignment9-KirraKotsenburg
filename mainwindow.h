@@ -27,6 +27,7 @@ public:
 private slots:
     // Slot to start the game when the "START" button is clicked
     void startGame();
+    void tutorialPage();
 
 private:
     Ui::MainWindow *ui;

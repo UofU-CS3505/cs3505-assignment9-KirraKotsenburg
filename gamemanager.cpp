@@ -22,6 +22,11 @@ void GameManager::gameOver() {
     emit stateChanged(m_gameState);
 }
 
+void GameManager::tutorial() {
+    m_gameState = Tutorial;
+    emit stateChanged(m_gameState);
+}
+
 // Increase or decrease the score
 void GameManager::updateScore(int delta) {
     m_score += delta;
