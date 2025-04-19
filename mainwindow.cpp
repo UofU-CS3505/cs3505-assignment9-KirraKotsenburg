@@ -93,6 +93,7 @@ MainWindow::MainWindow(QWidget *parent)
     goalLabel->setFont(QFont(goalLabel->font().family(), 14, QFont::Bold));
 
     QLabel *goalText = new QLabel("Put it later~", tutorialWidget);
+    goalText->setObjectName("goalText");  // Add this line to set the object name
     goalText->setWordWrap(true);
     goalText->setAlignment(Qt::AlignLeft);
 
@@ -194,7 +195,7 @@ void MainWindow::handleGameStateChange(GameState newState)
             showingPopup = false;
         }
         break;
-    case Level1:  // Handle all level states the same way for gameplay
+    case Level1:
     case Level2:
     case Level3:
         gameWidget->resumeGame();
