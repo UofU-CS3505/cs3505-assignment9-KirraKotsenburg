@@ -62,7 +62,6 @@ public:
     void initializePlantDatabase();
 
 
-
 };
 
 #endif // PHYSICSWORLD_H

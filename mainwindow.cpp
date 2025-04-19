@@ -192,6 +192,14 @@ void MainWindow::handleGameStateChange(GameState newState)
         gameWidget->pauseGame();  // Pause before switching to menu
         m_stackWidget->setCurrentIndex(0);
         break;
+    case GameClear:
+        if(!showingPopup){
+            showingPopup = true;
+            gameWidget->pauseGame();  // Pause before showing popup
+            showGameClearPopup();
+            showingPopup = false;
+        }
+        break;
     default:
         break;
     }
@@ -270,4 +278,95 @@ void MainWindow::showGameOverPopup()
     // Cleanup and return to menu
     m_stackWidget->setCurrentIndex(0);
     gameOverDialog->deleteLater();
+}
+
+void MainWindow::showGameClearPopup(){
+    // Prevent multiple dialogs
+    if (findChild<QDialog*>()) return;
+
+    gameWidget->pauseGame();
+    // Create a custom dialog
+    QDialog *gameClearDialog = new QDialog(this);
+    gameClearDialog->setWindowTitle("Game Clear");
+    gameClearDialog->setFixedSize(500, 300);
+
+    // Create layout
+    QVBoxLayout *layout = new QVBoxLayout(gameClearDialog);
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(15);
+
+    // Title
+    QLabel *titleLabel = new QLabel("Game Clear", gameClearDialog);
+    titleLabel->setAlignment(Qt::AlignCenter);
+    QFont titleFont = titleLabel->font();
+    titleFont.setPointSize(24);
+    titleFont.setBold(true);
+    titleLabel->setFont(titleFont);
+
+    // Score display
+    QLabel *scoreLabel = new QLabel(QString("Final Score: %1").arg(gameWidget->gameManager()->score()), gameClearDialog);
+    scoreLabel->setAlignment(Qt::AlignCenter);
+    QFont scoreFont = scoreLabel->font();
+    scoreFont.setPointSize(18);
+    scoreLabel->setFont(scoreFont);
+
+    // Message
+    QLabel *messageLabel = new QLabel("Your grandma makes it!", gameClearDialog);
+    messageLabel->setAlignment(Qt::AlignCenter);
+    messageLabel->setWordWrap(true);
+
+    // Return button
+    QPushButton *returnButton = new QPushButton("Return to Main Menu", gameClearDialog);
+    returnButton->setFixedSize(200, 40);
+
+    // Next Level Button
+    QPushButton *NextButton = new QPushButton("Next Level", gameClearDialog);
+    NextButton->setFixedSize(200, 40);
+
+    // Return Button -> triggers reject()
+    connect(returnButton, &QPushButton::clicked, gameClearDialog, &QDialog::reject);
+
+    // Next Button -> triggers accept()
+    connect(NextButton, &QPushButton::clicked, gameClearDialog, &QDialog::accept);
+
+    // Add widgets to layout
+    layout->addStretch();
+    layout->addWidget(titleLabel);
+    layout->addSpacing(20);
+    layout->addWidget(scoreLabel);
+    layout->addWidget(messageLabel);
+    layout->addStretch();
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addWidget(NextButton);
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(returnButton);
+    layout->addLayout(buttonLayout);
+
+    // Style the dialog
+    gameClearDialog->setStyleSheet(
+        "QDialog { background-color: #2c3e50; }"
+        "QLabel { color: #ecf0f1; }"
+        "QPushButton {"
+        "   background-color: #3498db;"
+        "   color: white;"
+        "   border: none;"
+        "   border-radius: 5px;"
+        "   font-size: 16px;"
+        "}"
+        "QPushButton:hover { background-color: #2980b9; }"
+        );
+
+    // show the Dialog result
+    int result = gameClearDialog->exec();
+
+    if (result == QDialog::Rejected) {
+        m_stackWidget->setCurrentIndex(0);
+    }
+    else if (result == QDialog::Accepted) {
+
+    }
+
+    gameWidget->pauseGame();
+    gameClearDialog->deleteLater();
 }
