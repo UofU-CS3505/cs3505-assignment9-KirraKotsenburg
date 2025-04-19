@@ -133,8 +133,8 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     painter.drawPath(roadPath);
 
     float startX = 0.0f;
-    float endX = 990.0f;       
-    float wallY = -1.0f;       
+    float endX = 990.0f;
+    float wallY = -1.0f;
 
     QPointF leftHousePos = worldToScreenCamera(b2Vec2(startX, wallY));
     QPointF rightHousePos = worldToScreenCamera(b2Vec2(endX, wallY));
@@ -338,56 +338,27 @@ void WorldRenderer::updateGameState()
 // worldrenderer.cpp - modify showPlantPopup
 // Modified showPlantPopup to show description in the same dialog
 void WorldRenderer::showPlantPopup(Hazard* hazard) {
-    QDialog dialog;
-    qDebug() << "Popup slot triggered!";
-    dialog.setWindowTitle("Plant Found: " + hazard->plantName());
+    QDialog* dialog = new QDialog;
+    dialog->setWindowTitle("Plant Found");
 
-    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    QVBoxLayout* layout = new QVBoxLayout(dialog);
 
-    // Image
+    // Image (check if it opens correctly)
     QPixmap image(hazard->imagePath());
-    if (image.isNull()) {
-        qDebug() << "Failed to load image from path:" << hazard->imagePath();
-    } else {
-        QLabel* imageLabel = new QLabel();
+    QLabel* imageLabel = new QLabel();
+    if (!image.isNull()) {
         image = image.scaled(480, 480, Qt::KeepAspectRatio);
         imageLabel->setPixmap(image);
-        imageLabel->setAlignment(Qt::AlignCenter);
-        layout->addWidget(imageLabel);
+    } else {
+        imageLabel->setText("Image not found");
     }
+    imageLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(imageLabel);
 
-    // Plant Name
-    QLabel* nameLabel = new QLabel(hazard->plantName());
-    nameLabel->setAlignment(Qt::AlignCenter);
-    QFont nameFont = nameLabel->font();
-    nameFont.setPointSize(16);
-    nameFont.setBold(true);
-    nameLabel->setFont(nameFont);
-    layout->addWidget(nameLabel);
-
-    // Plant Type Indicator
-    QString typeText = hazard->type() == "herb" ?
-                           "This appears to be a beneficial herb!" :
-                           "Warning: This may be poisonous!";
-
-    QLabel* typeLabel = new QLabel(typeText);
-    typeLabel->setAlignment(Qt::AlignCenter);
-    typeLabel->setStyleSheet(hazard->type() == "herb" ?
-                                 "color: green; font-weight: bold;" :
-                                 "color: red; font-weight: bold;");
-    layout->addWidget(typeLabel);
-
-    // Description Label (always visible now)
-    QLabel* descriptionLabel = new QLabel(hazard->description());
-    descriptionLabel->setAlignment(Qt::AlignCenter);
-    descriptionLabel->setWordWrap(true);
-    // descriptionLabel->setStyleSheet("margin: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;");
-    layout->addWidget(descriptionLabel);
-
-    // Text
-    QLabel* textLabel = new QLabel("Do you want to pick this plant?");
-    textLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(textLabel);
+    // Text prompt
+    QLabel* questionLabel = new QLabel("Do you want to pick this plant?");
+    questionLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(questionLabel);
 
     // Buttons
     QHBoxLayout* buttonLayout = new QHBoxLayout();
@@ -397,32 +368,78 @@ void WorldRenderer::showPlantPopup(Hazard* hazard) {
     buttonLayout->addWidget(noButton);
     layout->addLayout(buttonLayout);
 
-    QPointer<QDialog> dialogPtr = &dialog;
+    // Info elements (initially hidden)
+    QLabel* nameLabel = new QLabel(hazard->plantName());
+    nameLabel->setAlignment(Qt::AlignCenter);
+    QFont nameFont = nameLabel->font();
+    nameFont.setPointSize(16);
+    nameFont.setBold(true);
+    nameLabel->setFont(nameFont);
+    nameLabel->hide();
+    layout->addWidget(nameLabel);
 
-    QObject::connect(yesButton, &QPushButton::clicked, this, [dialogPtr]() {
-        if(dialogPtr) dialogPtr->accept();
+    QLabel* typeLabel = new QLabel(hazard->type() == "herb" ?
+                                       "This appears to be a beneficial herb!" :
+                                       "Warning: This may be poisonous!");
+    typeLabel->setAlignment(Qt::AlignCenter);
+    typeLabel->setStyleSheet(hazard->type() == "herb" ?
+                                 "color: green; font-weight: bold;" :
+                                 "color: red; font-weight: bold;");
+    typeLabel->hide();
+    layout->addWidget(typeLabel);
+
+    QLabel* descriptionLabel = new QLabel(hazard->description());
+    descriptionLabel->setAlignment(Qt::AlignCenter);
+    descriptionLabel->setWordWrap(true);
+    descriptionLabel->hide();
+    layout->addWidget(descriptionLabel);
+
+    QPushButton* closeButton = new QPushButton("Close");
+    closeButton->hide();
+    layout->addWidget(closeButton);
+
+    pauseGame();
+
+    // Use QPointer to avoid warning for local variables going out of scope for lambda
+    QPointer<QDialog> dialogPtr(dialog);
+    QPointer<QLabel> questionPtr(questionLabel);
+    QPointer<QLabel> namePtr(nameLabel);
+    QPointer<QLabel> typePtr(typeLabel);
+    QPointer<QLabel> descriptionPtr(descriptionLabel);
+    QPointer<QPushButton> yesPtr(yesButton);
+    QPointer<QPushButton> noPtr(noButton);
+    QPointer<QPushButton> closePtr(closeButton);
+
+    QObject::connect(noButton, &QPushButton::clicked, [dialogPtr]() {
+        if (dialogPtr) dialogPtr->reject();
     });
 
-    QObject::connect(noButton, &QPushButton::clicked, this, [dialogPtr]() {
-        if(dialogPtr) dialogPtr->reject();
-    });
+    QObject::connect(yesButton, &QPushButton::clicked,this, [=]() {
+        // This is where plant name/description/warning can be toggled on
+        if (questionPtr) questionPtr->hide();
+        if (yesPtr) yesPtr->hide();
+        if (noPtr) noPtr->hide();
+        if (namePtr) namePtr->show();
+        if (typePtr) typePtr->show();
+        if (descriptionPtr) descriptionPtr->show();
+        if (closePtr) closePtr->show();
 
-    pauseGame(); // Pause the game while showing the popup
-    int ret = dialog.exec();
-    resumeGame(); // Resume the game after the popup is closed
-
-    if (ret == QDialog::Accepted) {
-        // Player chose to pick the plant
-        // No separate description box needed here
-
-        // Apply game effects based on plant type
+        // Game effects
         if (hazard->type() == "herb") {
-            // Beneficial herb - increase score
             m_gameManager->updateScore(10);
         } else if (hazard->type() == "poisonous") {
-            // Poisonous plant - decrease health
             m_gameManager->damage(1);
         }
-    }
+    });
+
+    QObject::connect(closeButton, &QPushButton::clicked, [dialogPtr]() {
+        if (dialogPtr) dialogPtr->accept();
+    });
+
+    dialog->exec();
+    resumeGame();
+    // Clear up memory
+    delete dialog;
 }
+
 
