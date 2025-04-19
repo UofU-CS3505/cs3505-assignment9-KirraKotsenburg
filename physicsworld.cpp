@@ -300,9 +300,49 @@ void PhysicsWorld::initializePlantDatabase()
                                "Causes itchy rash due to urushiol oil. Contact can lead to severe allergic reactions.",
                                ":/dangerous/Plants/Danger_Plants/poison_ivy.jpg"});
 
-    m_plantDatabase.push_back({"poisonous", "Jimsonweed",
+    m_plantDatabase.push_back({"poisonous", "Jimson Weed",
                                "Contains tropane alkaloids that cause hallucinations, hyperthermia, and potentially fatal heart arrhythmias.",
                                ":/dangerous/Plants/Danger_Plants/jimson_weed.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Bittersweet Nightshade",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/bittersweet_nightshade.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "False Hellebore",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/false_hellebore.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Lupine/Blude Bonnet",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/lupine_blue_bonnet.jpeg"});
+
+    m_plantDatabase.push_back({"poisonous", "Monkshood/Wolfbane",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/monkshood_wolfbane.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Myrtle Spurge",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/myrtle_spurge.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Poison Hemlock",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/poison_hemlock.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Snow on the Mountain",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/snow_on_the_mountain.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Stinging Nettle",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/stinging_nettle.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Wart Weed",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/wart_weed.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Oregon Grape",
+                               "TODO",
+                               ":/dangerous/Plants/Danger_Plants/oregon_grape.jpg"});
 
     // Beneficial herbs
     m_plantDatabase.push_back({"herb", "Creosote Bush",
@@ -324,5 +364,29 @@ void PhysicsWorld::initializePlantDatabase()
     m_plantDatabase.push_back({"herb", "Prairie Flax",
                                "Soothes digestive issues and freshens breath. Contains menthol that can relieve nasal congestion.",
                                ":/safe/Plants/Safe_Plants/prairie_flax.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Prickly Pear Cactus",
+                               "TODO.",
+                               ":/safe/Plants/Safe_Plants/prickly_pear_cactus.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Sacred Thornapple",
+                               "TODO.",
+                               ":/safe/Plants/Safe_Plants/sacred_thornapple.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Sagebrush",
+                               "TODO.",
+                               ":/safe/Plants/Safe_Plants/sagebrush.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Snowberry",
+                               "TODO.",
+                               ":/safe/Plants/Safe_Plants/snowberry.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Utah Juniper",
+                               "TODO.",
+                               ":/safe/Plants/Safe_Plants/utah_juniper.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Yarrow",
+                               "TODO.",
+                               ":/safe/Plants/Safe_Plants/yarrow.jpg"});
 }
 
