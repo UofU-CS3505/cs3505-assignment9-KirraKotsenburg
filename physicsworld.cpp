@@ -249,8 +249,8 @@ void PhysicsWorld::Reset() {
     m_hazards.clear();
 
     // Select two random plants for the initial hazards
-    int plantIndex1 = arc4random() % m_plantDatabase.size();
-    int plantIndex2 = (plantIndex1 + arc4random() % (m_plantDatabase.size() - 1) + 1) % m_plantDatabase.size(); // Ensure different plants
+    int plantIndex1 = rand() % m_plantDatabase.size();
+    int plantIndex2 = (plantIndex1 + rand() % (m_plantDatabase.size() - 1) + 1) % m_plantDatabase.size(); // Ensure different plants
 
     const PlantData& plant1 = m_plantDatabase[plantIndex1];
     const PlantData& plant2 = m_plantDatabase[plantIndex2];
@@ -325,3 +325,4 @@ void PhysicsWorld::initializePlantDatabase()
                                "Soothes digestive issues and freshens breath. Contains menthol that can relieve nasal congestion.",
                                ":/safe/Plants/Safe_Plants/prairie_flax.jpg"});
 }
+

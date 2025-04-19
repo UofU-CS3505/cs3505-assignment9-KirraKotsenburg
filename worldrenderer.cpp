@@ -156,6 +156,8 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     painter.drawRect(chassisRect);
     painter.restore();
 
+
+
     // Wheels
     for (int i = 0; i < 2; ++i) {
         b2Body *wheel = vehicle->GetWheel(i);
@@ -305,6 +307,22 @@ void WorldRenderer::updateGameState()
 
             // Update game logic
             m_gameManager->update();
+
+            // Check if vehicle reached the right house (game clear condition)
+            Vehicle *vehicle = m_physicsWorld->GetVehicle();
+            b2Vec2 vehiclePos = vehicle->GetChassis()->GetPosition();
+
+            // Right house position is at x=990.0f, y=-1.0f
+            const float houseX = 990.0f;
+            const float houseY = -1.0f;
+            const float arrivalThreshold = 5.0f; // Distance threshold for arrival
+
+            // Calculate distance to right house
+            float distance = b2Distance(vehiclePos, b2Vec2(houseX, houseY));
+
+            if (distance <= arrivalThreshold) {
+                m_gameManager->gameClear(); // Call game clear function
+            }
         }
         catch (...) {
             // If an exception occurs, safely pause the game
@@ -407,3 +425,4 @@ void WorldRenderer::showPlantPopup(Hazard* hazard) {
         }
     }
 }
+
