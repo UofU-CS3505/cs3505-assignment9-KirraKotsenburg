@@ -25,9 +25,7 @@ void GameContactListener::BeginContact(b2Contact* contact) {
             m_physicsWorld->QueueForRemoval(hazard->getBody());
             //m_gameManager->damage(10);
         }
-        qDebug() << "About to emit!";
         emit plantContact(hazard);
-        //m_physicsWorld->QueueForRemoval(hazard->getBody());
     }
 }
 

@@ -319,7 +319,6 @@ void WorldRenderer::updateGameState()
 
 void WorldRenderer::showPlantPopup(Hazard* hazard) {
     QDialog dialog;
-    qDebug() << "Popup slot triggered!";
     dialog.setWindowTitle("Mysterious Plant Found");
 
     QVBoxLayout* layout = new QVBoxLayout(&dialog);
