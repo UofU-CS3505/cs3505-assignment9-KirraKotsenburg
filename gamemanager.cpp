@@ -48,3 +48,8 @@ void GameManager::update() {
 void GameManager::resetGame() {
     startGame();
 }
+
+void GameManager::gameClear() {
+    m_gameState = GameClear;
+    emit stateChanged(m_gameState);
+}

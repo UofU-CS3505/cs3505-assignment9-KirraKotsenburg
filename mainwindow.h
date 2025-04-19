@@ -38,6 +38,8 @@ private:
     WorldRenderer *gameWidget;
 
     void showGameOverPopup();
+
+    void showGameClearPopup();
 };
 
 #endif // MAINWINDOW_H

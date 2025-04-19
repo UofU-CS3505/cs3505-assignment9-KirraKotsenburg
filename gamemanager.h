@@ -8,7 +8,8 @@ enum GameState {
     MainMenu,
     Tutorial,
     Playing,
-    GameOver
+    GameOver,
+    GameClear
 };
 
 // The GameManager class handles the game state, player score, and health.
@@ -45,6 +46,7 @@ public:
 
     void resetGame();
 
+    void gameClear();
 
 public slots:
     // Called every frame (if needed for periodic updates)

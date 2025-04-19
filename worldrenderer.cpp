@@ -156,6 +156,8 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     painter.drawRect(chassisRect);
     painter.restore();
 
+
+
     // Wheels
     for (int i = 0; i < 2; ++i) {
         b2Body *wheel = vehicle->GetWheel(i);
@@ -305,6 +307,22 @@ void WorldRenderer::updateGameState()
 
             // Update game logic
             m_gameManager->update();
+
+            // Check if vehicle reached the right house (game clear condition)
+            Vehicle *vehicle = m_physicsWorld->GetVehicle();
+            b2Vec2 vehiclePos = vehicle->GetChassis()->GetPosition();
+
+            // Right house position is at x=990.0f, y=-1.0f
+            const float houseX = 990.0f;
+            const float houseY = -1.0f;
+            const float arrivalThreshold = 5.0f; // Distance threshold for arrival
+
+            // Calculate distance to right house
+            float distance = b2Distance(vehiclePos, b2Vec2(houseX, houseY));
+
+            if (distance <= arrivalThreshold) {
+                m_gameManager->gameClear(); // Call game clear function
+            }
         }
         catch (...) {
             // If an exception occurs, safely pause the game
@@ -317,10 +335,12 @@ void WorldRenderer::updateGameState()
     update();
 }
 
+// worldrenderer.cpp - modify showPlantPopup
+// Modified showPlantPopup to show description in the same dialog
 void WorldRenderer::showPlantPopup(Hazard* hazard) {
     QDialog dialog;
     qDebug() << "Popup slot triggered!";
-    dialog.setWindowTitle("Mysterious Plant Found");
+    dialog.setWindowTitle("Plant Found: " + hazard->plantName());
 
     QVBoxLayout* layout = new QVBoxLayout(&dialog);
 
@@ -336,8 +356,36 @@ void WorldRenderer::showPlantPopup(Hazard* hazard) {
         layout->addWidget(imageLabel);
     }
 
+    // Plant Name
+    QLabel* nameLabel = new QLabel(hazard->plantName());
+    nameLabel->setAlignment(Qt::AlignCenter);
+    QFont nameFont = nameLabel->font();
+    nameFont.setPointSize(16);
+    nameFont.setBold(true);
+    nameLabel->setFont(nameFont);
+    layout->addWidget(nameLabel);
+
+    // Plant Type Indicator
+    QString typeText = hazard->type() == "herb" ?
+                           "This appears to be a beneficial herb!" :
+                           "Warning: This may be poisonous!";
+
+    QLabel* typeLabel = new QLabel(typeText);
+    typeLabel->setAlignment(Qt::AlignCenter);
+    typeLabel->setStyleSheet(hazard->type() == "herb" ?
+                                 "color: green; font-weight: bold;" :
+                                 "color: red; font-weight: bold;");
+    layout->addWidget(typeLabel);
+
+    // Description Label (always visible now)
+    QLabel* descriptionLabel = new QLabel(hazard->description());
+    descriptionLabel->setAlignment(Qt::AlignCenter);
+    descriptionLabel->setWordWrap(true);
+    // descriptionLabel->setStyleSheet("margin: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;");
+    layout->addWidget(descriptionLabel);
+
     // Text
-    QLabel* textLabel = new QLabel("Do you want to pick the plant?");
+    QLabel* textLabel = new QLabel("Do you want to pick this plant?");
     textLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(textLabel);
 
@@ -359,13 +407,22 @@ void WorldRenderer::showPlantPopup(Hazard* hazard) {
         if(dialogPtr) dialogPtr->reject();
     });
 
+    pauseGame(); // Pause the game while showing the popup
     int ret = dialog.exec();
+    resumeGame(); // Resume the game after the popup is closed
 
     if (ret == QDialog::Accepted) {
-        QMessageBox descriptionBox;
-        descriptionBox.setWindowTitle("Plant Info");
-        descriptionBox.setText(hazard->description());
-        descriptionBox.setIcon(QMessageBox::NoIcon);
-        descriptionBox.exec();
+        // Player chose to pick the plant
+        // No separate description box needed here
+
+        // Apply game effects based on plant type
+        if (hazard->type() == "herb") {
+            // Beneficial herb - increase score
+            m_gameManager->updateScore(10);
+        } else if (hazard->type() == "poisonous") {
+            // Poisonous plant - decrease health
+            m_gameManager->damage(1);
+        }
     }
 }
+

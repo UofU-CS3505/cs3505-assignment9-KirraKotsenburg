@@ -8,6 +8,8 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
     , m_positionIterations(2)
     , m_contactListener(nullptr)
 {
+    initializePlantDatabase();
+
     srand(static_cast<unsigned int>(time(nullptr)));
 
     // Create the player's vehicle at an initial position
@@ -82,41 +84,68 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
     // -----------------------------------------------------
 
     // Generate random hazards along the road
-    int actualHazardCount = std::min(hazardCount, 15); // Cap at 15 hazards
+    // Generate random hazards along the road with no duplicates
+    int actualHazardCount = std::min(hazardCount, static_cast<int>(m_plantDatabase.size()));
+
+    // Create a list of available plant indices
+    std::vector<int> availablePlantIndices;
+    for (int i = 0; i < m_plantDatabase.size(); i++) {
+        availablePlantIndices.push_back(i);
+    }
+
+    // Fisher-Yates shuffle to randomize the indices
+    for (int i = availablePlantIndices.size() - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        std::swap(availablePlantIndices[i], availablePlantIndices[j]);
+    }
+
+    // Calculate road bounds
+    float roadStartX = 15.0f; // Safe margin from start
+    float roadEndX = (roadPointCount - 1) * segmentWidth - 15.0f; // Safe margin from end
+    float roadLength = roadEndX - roadStartX;
+
+    // Divide road into sections for plants with spacing
+    float sectionLength = roadLength / actualHazardCount;
 
     for (int i = 0; i < actualHazardCount; i++) {
-        // Generate a random X position along the road
-        // Limit the range to avoid placing hazards too close to the start
-        float minX = 15.0f;  // Minimum distance from start
-        float maxX = (roadPointCount - 1) * segmentWidth;  // Maximum x based on road length
-        float hazardX = minX + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxX - minX);
+        // Calculate position within the section (add randomness but stay in section)
+        float sectionStart = roadStartX + i * sectionLength;
+        float randomOffset = (static_cast<float>(rand()) / RAND_MAX) * (sectionLength * 0.7f);
+        float hazardX = sectionStart + randomOffset;
 
-        // Find the exact segment the hazard is on
+        // Find the road segment this position corresponds to
         int segmentIndex = static_cast<int>(hazardX / segmentWidth);
+        segmentIndex = std::min(segmentIndex, roadPointCount - 2); // Ensure within valid range
 
-        // Calculate exact position within segment (from 0.0 to 1.0)
+        // Calculate position within segment (0.0 to 1.0)
         float segmentPosition = (hazardX - segmentIndex * segmentWidth) / segmentWidth;
 
-        // Get the Y values at the start and end of this segment
+        // Calculate Y value based on road height at this position
         float startY = -2.0f;
-        float endY = -2.0f;
-
-        // Calculate the Y values at segment start
         for (int j = 0; j < segmentIndex; j++) {
             startY += deltaY[j % segmentCount];
         }
 
-        // Calculate the Y value at segment end
-        endY = startY + deltaY[segmentIndex % segmentCount];
-
-        // Interpolate between start and end Y values based on position within segment
+        float endY = startY + deltaY[segmentIndex % segmentCount];
         float hazardY = startY + segmentPosition * (endY - startY);
 
-        // Add a consistent offset to ensure it's above the road
+        // Add offset to place above the road
         hazardY += 0.7f;
 
-        // Create the hazard at this position
-        m_hazards.push_back(new Hazard(m_world, b2Vec2(hazardX, hazardY), 1.0, "poisonous", "bad plant", ":/dangerous/Plants/Danger_Plants/baneberry.jpg"));
+        // Get unique plant from database
+        int plantIndex = availablePlantIndices[i];
+        const PlantData& plant = m_plantDatabase[plantIndex];
+
+        // Create hazard with selected plant data
+        m_hazards.push_back(new Hazard(
+            m_world,
+            b2Vec2(hazardX, hazardY),
+            1.0,
+            plant.type,
+            plant.name,
+            plant.description,
+            plant.imagePath
+            ));
     }
 }
 
@@ -210,6 +239,7 @@ void PhysicsWorld::ProcessRemovalQueue() {
     }
 }
 
+// physicsworld.cpp - update Reset method
 void PhysicsWorld::Reset() {
     // Clear existing hazards
     for(auto hazard : m_hazards) {
@@ -218,10 +248,81 @@ void PhysicsWorld::Reset() {
     }
     m_hazards.clear();
 
-    // Recreate initial hazards
-    m_hazards.push_back(new Hazard(m_world, b2Vec2(-15.0f, -2.0f), 1.0, "poisonous", "bad plant", ":/dangerous/Plants/Danger_Plants/baneberry.jpg"));
-    m_hazards.push_back(new Hazard(m_world, b2Vec2(25.0f, 0.5f), 1.0, "poisonous", "bad plant", ":/dangerous/Plants/Danger_Plants/death_camas.jpg"));
+    // Select two random plants for the initial hazards
+    int plantIndex1 = rand() % m_plantDatabase.size();
+    int plantIndex2 = (plantIndex1 + rand() % (m_plantDatabase.size() - 1) + 1) % m_plantDatabase.size(); // Ensure different plants
+
+    const PlantData& plant1 = m_plantDatabase[plantIndex1];
+    const PlantData& plant2 = m_plantDatabase[plantIndex2];
+
+    // Recreate initial hazards with random plant data
+    m_hazards.push_back(new Hazard(
+        m_world,
+        b2Vec2(-15.0f, -2.0f),
+        1.0,
+        plant1.type,
+        plant1.name,
+        plant1.description,
+        plant1.imagePath
+        ));
+
+    m_hazards.push_back(new Hazard(
+        m_world,
+        b2Vec2(25.0f, 0.5f),
+        1.0,
+        plant2.type,
+        plant2.name,
+        plant2.description,
+        plant2.imagePath
+        ));
 
     // Reset vehicle
     m_vehicle->Reset(b2Vec2(0.0f, 10.0f));
 }
+
+// Add this new method implementation after the constructor
+void PhysicsWorld::initializePlantDatabase()
+{
+    // Poisonous plants
+    m_plantDatabase.push_back({"poisonous", "Baneberry",
+                               "Highly poisonous berries that can cause cardiac arrest. All parts of the plant are toxic.",
+                               ":/dangerous/Plants/Danger_Plants/baneberry.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Death Camas",
+                               "Extremely toxic plant containing zygacine, which causes vomiting, seizures, and heart problems.",
+                               ":/dangerous/Plants/Danger_Plants/death_camas.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Water Hemlock",
+                               "One of the most toxic plants in North America. Contains cicutoxin that affects the central nervous system.",
+                               ":/dangerous/Plants/Danger_Plants/water_hemlock.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Poison Ivy",
+                               "Causes itchy rash due to urushiol oil. Contact can lead to severe allergic reactions.",
+                               ":/dangerous/Plants/Danger_Plants/poison_ivy.jpg"});
+
+    m_plantDatabase.push_back({"poisonous", "Jimsonweed",
+                               "Contains tropane alkaloids that cause hallucinations, hyperthermia, and potentially fatal heart arrhythmias.",
+                               ":/dangerous/Plants/Danger_Plants/jimson_weed.jpg"});
+
+    // Beneficial herbs
+    m_plantDatabase.push_back({"herb", "Creosote Bush",
+                               "Used to boost the immune system and reduce symptoms of infections.",
+                               ":/safe/Plants/Safe_Plants/creosote_bush.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Golden Currant",
+                               "Rich in antioxidants and vitamins that may boost immunity and reduce inflammation.",
+                               ":/safe/Plants/Safe_Plants/golden_currant.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Mormon Tea",
+                               "Traditionally used to stop bleeding, reduce fever, and treat digestive issues.",
+                               ":/safe/Plants/Safe_Plants/mormon_tea.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Osha",
+                               "Calming herb that helps with sleep, digestive issues, and inflammation.",
+                               ":/safe/Plants/Safe_Plants/osha.jpg"});
+
+    m_plantDatabase.push_back({"herb", "Prairie Flax",
+                               "Soothes digestive issues and freshens breath. Contains menthol that can relieve nasal congestion.",
+                               ":/safe/Plants/Safe_Plants/prairie_flax.jpg"});
+}
+

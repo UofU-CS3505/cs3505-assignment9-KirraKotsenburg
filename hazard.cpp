@@ -1,8 +1,8 @@
 #include "hazard.h"
 
 Hazard::Hazard(b2World &world, const b2Vec2 &position, float radius,
-               const QString &type, const QString &desc, const QString &imgPath)
-    :  m_radius(radius), m_type(type), m_description(desc), m_imagePath(imgPath)
+               const QString &type, const QString &plantName, const QString &desc, const QString &imgPath)
+    : m_radius(radius), m_type(type), m_plantName(plantName), m_description(desc), m_imagePath(imgPath)
 {
     // Define a static body at the specified position
     b2BodyDef bodyDef;

@@ -17,7 +17,7 @@ private:
 
 public:
     Hazard(b2World &world, const b2Vec2 &position, float radius,
-           const QString &type, const QString &desc, const QString &imgPath);
+           const QString &type, const QString &plantName, const QString &desc, const QString &imgPath);
 
     // Destructor (does not destroy body; recommended to handle externally)
     ~Hazard();

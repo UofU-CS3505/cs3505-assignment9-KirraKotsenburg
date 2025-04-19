@@ -31,6 +31,7 @@ public:
     void pauseGame();
     GameManager* gameManager() const { return m_gameManager; }
 
+
 public slots:
     void updateGameState();
 
