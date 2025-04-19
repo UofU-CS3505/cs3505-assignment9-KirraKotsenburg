@@ -274,8 +274,16 @@ void WorldRenderer::resetGame()
     connect(m_contactListener, &GameContactListener::plantContact, this, &WorldRenderer::showPlantPopup);
     // Reset game state
     if (m_gameManager) {
-        m_gameManager->startGame();
+        int currentLevel = m_gameManager->currentLevel();
+        if (currentLevel == 0) {
+            // If not in a level state, start at level 1
+            m_gameManager->startSpecificLevel(1);
+        } else {
+            // Restart current level
+            m_gameManager->startSpecificLevel(currentLevel);
+        }
     }
+
 
     // Resume game
     resumeGame();
@@ -297,7 +305,11 @@ void WorldRenderer::pauseGame()
 
 void WorldRenderer::updateGameState()
 {
-    if (m_gameManager->gameState() == Playing) {
+    // Check if in any playable level state
+    if (m_gameManager->gameState() == Level1 ||
+        m_gameManager->gameState() == Level2 ||
+        m_gameManager->gameState() == Level3) {
+
         try {
             // Process physics updates
             m_physicsWorld->Step();
@@ -327,7 +339,6 @@ void WorldRenderer::updateGameState()
         catch (...) {
             // If an exception occurs, safely pause the game
             pauseGame();
-            // Could display an error message here
         }
     }
 

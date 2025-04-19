@@ -164,13 +164,22 @@ MainWindow::~MainWindow()
 // Switch to game screen when "START" is clicked
 void MainWindow::startGame()
 {
+    gameWidget->resetGame();
 
+    // Now switch to tutorial
     m_stackWidget->setCurrentIndex(1);
+    updateTutorialForLevel(gameWidget->gameManager()->currentLevel());
+
+    int currentLevel = gameWidget->gameManager()->currentLevel();
+    qDebug() << "Current level: " << currentLevel; // Should now be 1
+
 }
 
 void MainWindow::tutorialPage(){
     gameWidget->resetGame();
     m_stackWidget->setCurrentIndex(2);
+    int currentLevel = gameWidget->gameManager()->currentLevel();
+    qDebug() << "Current level: " << currentLevel; // Should now be 1
 }
 
 void MainWindow::handleGameStateChange(GameState newState)
@@ -180,27 +189,30 @@ void MainWindow::handleGameStateChange(GameState newState)
     case GameOver:
         if (!showingPopup) {
             showingPopup = true;
-            gameWidget->pauseGame();  // Pause before showing popup
+            gameWidget->pauseGame();
             showGameOverPopup();
             showingPopup = false;
         }
         break;
-    case Playing:
-        gameWidget->resumeGame();  // Resume when returning to game
+    case Level1:  // Handle all level states the same way for gameplay
+    case Level2:
+    case Level3:
+        gameWidget->resumeGame();
         break;
     case MainMenu:
-        gameWidget->pauseGame();  // Pause before switching to menu
+        gameWidget->pauseGame();
         m_stackWidget->setCurrentIndex(0);
         break;
     case GameClear:
         if(!showingPopup){
             showingPopup = true;
-            gameWidget->pauseGame();  // Pause before showing popup
+            gameWidget->pauseGame();
             showGameClearPopup();
             showingPopup = false;
         }
         break;
-    default:
+    case Tutorial:
+        // No change needed here
         break;
     }
 }
@@ -285,9 +297,16 @@ void MainWindow::showGameClearPopup(){
     if (findChild<QDialog*>()) return;
 
     gameWidget->pauseGame();
-    // Create a custom dialog
+
+    // Get current level
+    int currentLevel = gameWidget->gameManager()->currentLevel();
+    qDebug() << "Clear Popup Current level: " << currentLevel; // Should now be 1
+
+    bool isMaxLevel = (currentLevel == 3);
+
+    // Create dialog
     QDialog *gameClearDialog = new QDialog(this);
-    gameClearDialog->setWindowTitle("Game Clear");
+    gameClearDialog->setWindowTitle("Level " + QString::number(currentLevel) + " Clear");
     gameClearDialog->setFixedSize(500, 300);
 
     // Create layout
@@ -296,7 +315,7 @@ void MainWindow::showGameClearPopup(){
     layout->setSpacing(15);
 
     // Title
-    QLabel *titleLabel = new QLabel("Game Clear", gameClearDialog);
+    QLabel *titleLabel = new QLabel("Level " + QString::number(currentLevel) + " Clear", gameClearDialog);
     titleLabel->setAlignment(Qt::AlignCenter);
     QFont titleFont = titleLabel->font();
     titleFont.setPointSize(24);
@@ -319,15 +338,19 @@ void MainWindow::showGameClearPopup(){
     QPushButton *returnButton = new QPushButton("Return to Main Menu", gameClearDialog);
     returnButton->setFixedSize(200, 40);
 
-    // Next Level Button
-    QPushButton *NextButton = new QPushButton("Next Level", gameClearDialog);
-    NextButton->setFixedSize(200, 40);
+    // Next Level Button - only show if not at max level
+    QPushButton *nextButton = new QPushButton(isMaxLevel ? "Game Complete!" : "Next Level", gameClearDialog);
+    nextButton->setFixedSize(200, 40);
+
+    if (isMaxLevel) {
+        nextButton->setEnabled(false);  // Disable if at max level
+    }
 
     // Return Button -> triggers reject()
     connect(returnButton, &QPushButton::clicked, gameClearDialog, &QDialog::reject);
 
     // Next Button -> triggers accept()
-    connect(NextButton, &QPushButton::clicked, gameClearDialog, &QDialog::accept);
+    connect(nextButton, &QPushButton::clicked, gameClearDialog, &QDialog::accept);
 
     // Add widgets to layout
     layout->addStretch();
@@ -338,12 +361,12 @@ void MainWindow::showGameClearPopup(){
     layout->addStretch();
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->addWidget(NextButton);
+    buttonLayout->addWidget(nextButton);
     buttonLayout->addStretch();
     buttonLayout->addWidget(returnButton);
     layout->addLayout(buttonLayout);
 
-    // Style the dialog
+    // Style the dialog (unchanged)
     gameClearDialog->setStyleSheet(
         "QDialog { background-color: #2c3e50; }"
         "QLabel { color: #ecf0f1; }"
@@ -357,16 +380,53 @@ void MainWindow::showGameClearPopup(){
         "QPushButton:hover { background-color: #2980b9; }"
         );
 
-    // show the Dialog result
+    // Show the Dialog result
     int result = gameClearDialog->exec();
 
     if (result == QDialog::Rejected) {
+        // Return to menu - game will restart at the same level
+        gameWidget->pauseGame(); // Make sure game is paused
+
+        // Reset the physics world AND the game manager
+        gameWidget->resetGame();
+
+        // Make sure the gameManager is in a clean MainMenu state, NOT GameClear
+        gameWidget->gameManager()->startSpecificLevel(currentLevel);
+
+        // Now switch to the main menu
         m_stackWidget->setCurrentIndex(0);
     }
-    else if (result == QDialog::Accepted) {
-
+    else if (result == QDialog::Accepted && !isMaxLevel) {
+        // Advance to next level and show tutorial with updated goals
+        gameWidget->gameManager()->nextLevel();
+        updateTutorialForLevel(gameWidget->gameManager()->currentLevel());
+        m_stackWidget->setCurrentIndex(1);  // Navigate to tutorial page
     }
 
-    gameWidget->pauseGame();
+
     gameClearDialog->deleteLater();
+}
+
+// New method to update tutorial goals for each level
+void MainWindow::updateTutorialForLevel(int level) {
+    // Find the goal text label in the tutorial widget
+    QWidget* tutorialWidget = m_stackWidget->widget(1);
+    QLabel* goalLabel = tutorialWidget->findChild<QLabel*>("goalText");
+
+    if (goalLabel) {
+        switch (level) {
+        case 1:
+            goalLabel->setText("Level 1: Collect herbs to help your grandmother and reach her house safely.");
+            break;
+        case 2:
+            goalLabel->setText("Level 2: Collect at least 5 herbs and reach the house with 8+ health remaining.");
+            break;
+        case 3:
+            goalLabel->setText("Level 3: Master challenge! Collect all herbs without touching any poisonous plants.");
+            break;
+        default:
+            goalLabel->setText("Put it later~");
+            break;
+        }
+    }
 }

@@ -7,7 +7,9 @@
 enum GameState {
     MainMenu,
     Tutorial,
-    Playing,
+    Level1,
+    Level2,
+    Level3,
     GameOver,
     GameClear
 };
@@ -20,6 +22,7 @@ private:
     GameState m_gameState; // Current state of the game
     int m_score;           // Player's score
     int m_health;          // Player's health (e.g., max 100)
+    int m_currentLevel;
 
 public:
     explicit GameManager(QObject *parent = nullptr);
@@ -47,6 +50,10 @@ public:
     void resetGame();
 
     void gameClear();
+
+    void nextLevel();
+    int currentLevel();
+    void startSpecificLevel(int level);
 
 public slots:
     // Called every frame (if needed for periodic updates)

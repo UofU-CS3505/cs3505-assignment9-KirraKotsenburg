@@ -40,6 +40,8 @@ private:
     void showGameOverPopup();
 
     void showGameClearPopup();
+    void updateTutorialForLevel(int level);
+
 };
 
 #endif // MAINWINDOW_H
