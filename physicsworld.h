@@ -5,6 +5,16 @@
 #include "hazard.h"
 #include <box2d/box2d.h>
 #include <vector>
+#include <QString>
+#include <QPair>
+
+
+struct PlantData {
+    QString type;         // "herb" or "poisonous"
+    QString name;         // Plant name
+    QString description;  // Plant description
+    QString imagePath;    // Path to plant image
+};
 
 // PhysicsWorld manages the Box2D physics world, vehicle, and hazards
 class PhysicsWorld
@@ -19,6 +29,7 @@ private:
     std::vector<Hazard*> m_hazards;   // List of hazardous plants in the world
     b2ContactListener* m_contactListener; // Contact listener for collision detection
     std::vector<b2Body*> m_removeQueue; // Bodies queued for removal
+    std::vector<PlantData> m_plantDatabase;
 
 
 
@@ -48,6 +59,9 @@ public:
     void ProcessRemovalQueue();
 
     void Reset();
+    void initializePlantDatabase();
+
+
 
 };
 
