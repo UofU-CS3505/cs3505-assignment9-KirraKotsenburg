@@ -67,3 +67,4 @@ The information provided in the game is for educational purposes only.
 
 ## Acknowledgements
 - Utah Native Plant Society for information on local flora
+- Utah Poison Control Center for information on poisonous plants
