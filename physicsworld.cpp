@@ -84,34 +84,79 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
     // -----------------------------------------------------
 
     // Generate random hazards along the road
-    // Generate random hazards along the road with no duplicates
-    int actualHazardCount = std::min(hazardCount, static_cast<int>(m_plantDatabase.size()));
-
-    // Create a list of available plant indices
-    std::vector<int> availablePlantIndices;
-    for (int i = 0; i < m_plantDatabase.size(); i++) {
-        availablePlantIndices.push_back(i);
-    }
-
-    // Fisher-Yates shuffle to randomize the indices
-    for (int i = availablePlantIndices.size() - 1; i > 0; i--) {
-        int j = rand() % (i + 1);
-        std::swap(availablePlantIndices[i], availablePlantIndices[j]);
-    }
+    // Replace the plant placement section with this code
 
     // Calculate road bounds
     float roadStartX = 15.0f; // Safe margin from start
     float roadEndX = (roadPointCount - 1) * segmentWidth - 15.0f; // Safe margin from end
     float roadLength = roadEndX - roadStartX;
 
-    // Divide road into sections for plants with spacing
-    float sectionLength = roadLength / actualHazardCount;
+    // Separate plants by type
+    std::vector<int> poisonousPlantIndices;
+    std::vector<int> herbPlantIndices;
 
+    for (int i = 0; i < m_plantDatabase.size(); i++) {
+        if (m_plantDatabase[i].type == "poisonous") {
+            poisonousPlantIndices.push_back(i);
+        } else if (m_plantDatabase[i].type == "herb") {
+            herbPlantIndices.push_back(i);
+        }
+    }
+
+    // Fisher-Yates shuffle for poisonous plants
+    for (int i = poisonousPlantIndices.size() - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        std::swap(poisonousPlantIndices[i], poisonousPlantIndices[j]);
+    }
+
+    // Select 5 poisonous plants
+    poisonousPlantIndices.resize(5);
+
+    // Combine selected poisonous and all herb plants
+    std::vector<int> selectedPlantIndices;
+    selectedPlantIndices.insert(selectedPlantIndices.end(), poisonousPlantIndices.begin(), poisonousPlantIndices.end());
+    selectedPlantIndices.insert(selectedPlantIndices.end(), herbPlantIndices.begin(), herbPlantIndices.end());
+
+    // Shuffle the combined list of plant indices
+    for (int i = selectedPlantIndices.size() - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        std::swap(selectedPlantIndices[i], selectedPlantIndices[j]);
+    }
+
+    // Create an array of possible X positions along the road
+    int actualHazardCount = selectedPlantIndices.size(); // Should be 16 (5 poisonous + 11 herbs)
+    std::vector<float> hazardPositions;
+
+    // Generate possible positions with minimum spacing
+    float minSpacing = roadLength / (actualHazardCount * 1.5f); // Ensure some minimum spacing
     for (int i = 0; i < actualHazardCount; i++) {
-        // Calculate position within the section (add randomness but stay in section)
-        float sectionStart = roadStartX + i * sectionLength;
-        float randomOffset = (static_cast<float>(rand()) / RAND_MAX) * (sectionLength * 0.7f);
-        float hazardX = sectionStart + randomOffset;
+        float position;
+        bool validPosition;
+
+        // Try to find a position that's not too close to existing positions
+        int maxAttempts = 20;
+        int attempts = 0;
+
+        do {
+            validPosition = true;
+            position = roadStartX + (static_cast<float>(rand()) / RAND_MAX) * roadLength;
+
+            // Check distance from all existing positions
+            for (float existingPos : hazardPositions) {
+                if (std::abs(position - existingPos) < minSpacing) {
+                    validPosition = false;
+                    break;
+                }
+            }
+            attempts++;
+        } while (!validPosition && attempts < maxAttempts);
+
+        hazardPositions.push_back(position);
+    }
+
+    // Place plants at random positions
+    for (int i = 0; i < actualHazardCount; i++) {
+        float hazardX = hazardPositions[i];
 
         // Find the road segment this position corresponds to
         int segmentIndex = static_cast<int>(hazardX / segmentWidth);
@@ -132,8 +177,8 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
         // Add offset to place above the road
         hazardY += 0.7f;
 
-        // Get unique plant from database
-        int plantIndex = availablePlantIndices[i];
+        // Get selected plant from database
+        int plantIndex = selectedPlantIndices[i];
         const PlantData& plant = m_plantDatabase[plantIndex];
 
         // Create hazard with selected plant data
