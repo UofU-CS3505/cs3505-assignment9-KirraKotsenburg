@@ -155,6 +155,9 @@ MainWindow::MainWindow(QWidget *parent)
     // Set window size and title
     resize(1200, 600);
     setWindowTitle("Save Sick Grandma");
+
+    createHelpButton();
+    updateHelpButtonVisibility(MainMenu);
 }
 
 MainWindow::~MainWindow()
@@ -169,23 +172,20 @@ void MainWindow::startGame()
 
     // Now switch to tutorial
     m_stackWidget->setCurrentIndex(1);
+    updateHelpButtonVisibility(Tutorial);
     updateTutorialForLevel(gameWidget->gameManager()->currentLevel());
-
-    int currentLevel = gameWidget->gameManager()->currentLevel();
-    qDebug() << "Current level: " << currentLevel; // Should now be 1
 
 }
 
 void MainWindow::tutorialPage(){
     gameWidget->resetGame();
     m_stackWidget->setCurrentIndex(2);
-    int currentLevel = gameWidget->gameManager()->currentLevel();
-    qDebug() << "Current level: " << currentLevel; // Should now be 1
 }
 
 void MainWindow::handleGameStateChange(GameState newState)
 {
     static bool showingPopup = false;
+    updateHelpButtonVisibility(newState);
     switch(newState) {
     case GameOver:
         if (!showingPopup) {
@@ -386,7 +386,7 @@ void MainWindow::showGameClearPopup(){
 
     if (result == QDialog::Rejected) {
         // Return to menu - game will restart at the same level
-        gameWidget->pauseGame(); // Make sure game is paused
+        gameWidget->pauseGame();
 
         // Reset the physics world AND the game manager
         gameWidget->resetGame();
@@ -447,5 +447,145 @@ void MainWindow::updateTutorialForLevel(int level) {
             goalLabel->setText("Collect herbs to help your grandmother and reach her house safely.");
             break;
         }
+    }
+}
+
+void MainWindow::createHelpButton(){
+    m_helpButton = new QPushButton("?", this);
+    m_helpButton->setFixedSize(40,40);
+
+    m_helpButton->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #3498db;"
+        "   color: white;"
+        "   border: none;"
+        "   border-radius: 20px;"
+        "   font-size: 18px;"
+        "   font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #2980b9;"
+        "}"
+        "QPushButton:pressed {"
+        "   background-color: #1d6fa5;"
+        "}"
+        );
+
+    // Position in top-right corner with some margin
+    updateButtonPosition();
+    m_helpButton->hide();
+
+    connect(m_helpButton, &QPushButton::clicked, this, &MainWindow::showHelpDialog);
+}
+
+void MainWindow::showHelpDialog() {
+    // Create the dialog
+    QDialog *helpDialog = new QDialog(this);
+    helpDialog->setWindowTitle("Game Help");
+    helpDialog->setWindowModality(Qt::WindowModal);
+    helpDialog->setFixedSize(500, 400);
+
+    // Create layout
+    QVBoxLayout *layout = new QVBoxLayout(helpDialog);
+    layout->setContentsMargins(20, 20, 20, 20);
+
+    // Get the appropriate help text
+    int currentLevel = gameWidget->gameManager()->currentLevel();
+    QString helpText;
+
+    switch (currentLevel) {
+    case 1:
+        helpText = "Level 1: Collect these healing herbs to help your grandmother:\n"
+                   "- Golden Currant: A bush with bright yellow flowers\n"
+                   "- Mormon Tea: A green plant with jointed stems\n"
+                   "- Creosote Bush: Has small yellow flowers and a strong smell\n\n"
+                   "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.";
+        break;
+    case 2:
+        helpText = "Level 2: Collect these healing herbs to help your grandmother:\n"
+                   "- Golden Currant: A bush with bright yellow flowers\n"
+                   "- Mormon Tea: A green plant with jointed stems\n"
+                   "- Creosote Bush: Has small yellow flowers and a strong smell\n"
+                   "- Osha: Has white flower clusters and fernlike leaves\n"
+                   "- Prairie Flax: Has blue-purple flowers\n\n"
+                   "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.";
+        break;
+    case 3:
+        helpText = "Level 3 (Master Challenge): Collect ALL these healing herbs:\n"
+                   "- Golden Currant: A bush with bright yellow flowers\n"
+                   "- Mormon Tea: A green plant with jointed stems\n"
+                   "- Creosote Bush: Has small yellow flowers and a strong smell\n"
+                   "- Osha: Has white flower clusters and fernlike leaves\n"
+                   "- Prairie Flax: Has blue-purple flowers\n"
+                   "- Prickly Pear Cactus: Has flat, paddle-shaped segments\n"
+                   "- Sagebrush: Silver-gray shrub with a strong fragrance\n\n"
+                   "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.";
+        break;
+    default:
+        helpText = "Collect herbs to help your grandmother and reach her house safely.";
+        break;
+    }
+
+    // Create text label
+    QLabel *helpLabel = new QLabel(helpText, helpDialog);
+    helpLabel->setWordWrap(true);
+    helpLabel->setAlignment(Qt::AlignLeft);
+
+    // Create close button
+    QPushButton *closeButton = new QPushButton("Close", helpDialog);
+    closeButton->setFixedSize(100, 30);
+    connect(closeButton, &QPushButton::clicked, helpDialog, &QDialog::accept);
+
+    // Add widgets to layout
+    layout->addWidget(helpLabel);
+    layout->addWidget(closeButton, 0, Qt::AlignCenter);
+
+    // Style the dialog
+    helpDialog->setStyleSheet(
+        "QDialog {"
+        "   background-color: #2c3e50;"
+        "}"
+        "QLabel {"
+        "   color: white;"
+        "   font-size: 14px;"
+        "}"
+        "QPushButton {"
+        "   background-color: #3498db;"
+        "   color: white;"
+        "   border: none;"
+        "   border-radius: 5px;"
+        "   font-size: 14px;"
+        "   padding: 5px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #2980b9;"
+        "}"
+        );
+
+    // Pause game while dialog is open
+    gameWidget->pauseGame();
+    helpDialog->exec();
+    gameWidget->resumeGame();
+
+    // Clean up
+    helpDialog->deleteLater();
+}
+
+void MainWindow::updateHelpButtonVisibility(GameState state){
+    // Only show during gameplay levels, hide in all other states
+    bool shouldShow = (state == Level1 || state == Level2 || state == Level3);
+    m_helpButton->setVisible(shouldShow);
+
+    if (shouldShow) {
+        m_helpButton->raise();
+        updateButtonPosition();
+    }
+}
+
+void MainWindow::updateButtonPosition() {
+    if (m_helpButton) {
+
+        int xPos = (width() - m_helpButton->width()) / 2;
+        m_helpButton->move(xPos, 20);
     }
 }
