@@ -5,6 +5,7 @@
 #include <QStackedWidget>
 #include "gamemanager.h"
 #include "worldrenderer.h"
+#include <QPushButton>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -28,6 +29,7 @@ private slots:
     // Slot to start the game when the "START" button is clicked
     void startGame();
     void tutorialPage();
+    void showHelpDialog();
 
 private:
     Ui::MainWindow *ui;
@@ -40,6 +42,13 @@ private:
     void showGameOverPopup();
 
     void showGameClearPopup();
+    void updateTutorialForLevel(int level);
+    QPushButton *m_helpButton;
+
+    void createHelpButton();
+    void updateHelpButtonVisibility(GameState state);
+
+    void updateButtonPosition();
 };
 
 #endif // MAINWINDOW_H

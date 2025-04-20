@@ -93,6 +93,7 @@ MainWindow::MainWindow(QWidget *parent)
     goalLabel->setFont(QFont(goalLabel->font().family(), 14, QFont::Bold));
 
     QLabel *goalText = new QLabel("Put it later~", tutorialWidget);
+    goalText->setObjectName("goalText");  // Add this line to set the object name
     goalText->setWordWrap(true);
     goalText->setAlignment(Qt::AlignLeft);
 
@@ -154,6 +155,9 @@ MainWindow::MainWindow(QWidget *parent)
     // Set window size and title
     resize(1200, 600);
     setWindowTitle("Save Sick Grandma");
+
+    createHelpButton();
+    updateHelpButtonVisibility(MainMenu);
 }
 
 MainWindow::~MainWindow()
@@ -164,8 +168,13 @@ MainWindow::~MainWindow()
 // Switch to game screen when "START" is clicked
 void MainWindow::startGame()
 {
+    gameWidget->resetGame();
 
+    // Now switch to tutorial
     m_stackWidget->setCurrentIndex(1);
+    updateHelpButtonVisibility(Tutorial);
+    updateTutorialForLevel(gameWidget->gameManager()->currentLevel());
+
 }
 
 void MainWindow::tutorialPage(){
@@ -176,31 +185,35 @@ void MainWindow::tutorialPage(){
 void MainWindow::handleGameStateChange(GameState newState)
 {
     static bool showingPopup = false;
+    updateHelpButtonVisibility(newState);
     switch(newState) {
     case GameOver:
         if (!showingPopup) {
             showingPopup = true;
-            gameWidget->pauseGame();  // Pause before showing popup
+            gameWidget->pauseGame();
             showGameOverPopup();
             showingPopup = false;
         }
         break;
-    case Playing:
-        gameWidget->resumeGame();  // Resume when returning to game
+    case Level1:
+    case Level2:
+    case Level3:
+        gameWidget->resumeGame();
         break;
     case MainMenu:
-        gameWidget->pauseGame();  // Pause before switching to menu
+        gameWidget->pauseGame();
         m_stackWidget->setCurrentIndex(0);
         break;
     case GameClear:
         if(!showingPopup){
             showingPopup = true;
-            gameWidget->pauseGame();  // Pause before showing popup
+            gameWidget->pauseGame();
             showGameClearPopup();
             showingPopup = false;
         }
         break;
-    default:
+    case Tutorial:
+        // No change needed here
         break;
     }
 }
@@ -285,9 +298,16 @@ void MainWindow::showGameClearPopup(){
     if (findChild<QDialog*>()) return;
 
     gameWidget->pauseGame();
-    // Create a custom dialog
+
+    // Get current level
+    int currentLevel = gameWidget->gameManager()->currentLevel();
+    qDebug() << "Clear Popup Current level: " << currentLevel; // Should now be 1
+
+    bool isMaxLevel = (currentLevel == 3);
+
+    // Create dialog
     QDialog *gameClearDialog = new QDialog(this);
-    gameClearDialog->setWindowTitle("Game Clear");
+    gameClearDialog->setWindowTitle("Level " + QString::number(currentLevel) + " Clear");
     gameClearDialog->setFixedSize(500, 300);
 
     // Create layout
@@ -296,7 +316,7 @@ void MainWindow::showGameClearPopup(){
     layout->setSpacing(15);
 
     // Title
-    QLabel *titleLabel = new QLabel("Game Clear", gameClearDialog);
+    QLabel *titleLabel = new QLabel("Level " + QString::number(currentLevel) + " Clear", gameClearDialog);
     titleLabel->setAlignment(Qt::AlignCenter);
     QFont titleFont = titleLabel->font();
     titleFont.setPointSize(24);
@@ -319,15 +339,19 @@ void MainWindow::showGameClearPopup(){
     QPushButton *returnButton = new QPushButton("Return to Main Menu", gameClearDialog);
     returnButton->setFixedSize(200, 40);
 
-    // Next Level Button
-    QPushButton *NextButton = new QPushButton("Next Level", gameClearDialog);
-    NextButton->setFixedSize(200, 40);
+    // Next Level Button - only show if not at max level
+    QPushButton *nextButton = new QPushButton(isMaxLevel ? "Game Complete!" : "Next Level", gameClearDialog);
+    nextButton->setFixedSize(200, 40);
+
+    if (isMaxLevel) {
+        nextButton->setEnabled(false);  // Disable if at max level
+    }
 
     // Return Button -> triggers reject()
     connect(returnButton, &QPushButton::clicked, gameClearDialog, &QDialog::reject);
 
     // Next Button -> triggers accept()
-    connect(NextButton, &QPushButton::clicked, gameClearDialog, &QDialog::accept);
+    connect(nextButton, &QPushButton::clicked, gameClearDialog, &QDialog::accept);
 
     // Add widgets to layout
     layout->addStretch();
@@ -338,12 +362,12 @@ void MainWindow::showGameClearPopup(){
     layout->addStretch();
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->addWidget(NextButton);
+    buttonLayout->addWidget(nextButton);
     buttonLayout->addStretch();
     buttonLayout->addWidget(returnButton);
     layout->addLayout(buttonLayout);
 
-    // Style the dialog
+    // Style the dialog (unchanged)
     gameClearDialog->setStyleSheet(
         "QDialog { background-color: #2c3e50; }"
         "QLabel { color: #ecf0f1; }"
@@ -357,16 +381,211 @@ void MainWindow::showGameClearPopup(){
         "QPushButton:hover { background-color: #2980b9; }"
         );
 
-    // show the Dialog result
+    // Show the Dialog result
     int result = gameClearDialog->exec();
 
     if (result == QDialog::Rejected) {
+        // Return to menu - game will restart at the same level
+        gameWidget->pauseGame();
+
+        // Reset the physics world AND the game manager
+        gameWidget->resetGame();
+
+        // Make sure the gameManager is in a clean MainMenu state, NOT GameClear
+        gameWidget->gameManager()->startSpecificLevel(currentLevel);
+
+        // Now switch to the main menu
         m_stackWidget->setCurrentIndex(0);
     }
-    else if (result == QDialog::Accepted) {
-
+    else if (result == QDialog::Accepted && !isMaxLevel) {
+        // Advance to next level and show tutorial with updated goals
+        gameWidget->gameManager()->nextLevel();
+        updateTutorialForLevel(gameWidget->gameManager()->currentLevel());
+        m_stackWidget->setCurrentIndex(1);  // Navigate to tutorial page
     }
 
-    gameWidget->pauseGame();
+
     gameClearDialog->deleteLater();
+}
+
+// New method to update tutorial goals for each level
+void MainWindow::updateTutorialForLevel(int level) {
+    // Find the goal text label in the tutorial widget
+    QWidget* tutorialWidget = m_stackWidget->widget(1);
+    QLabel* goalLabel = tutorialWidget->findChild<QLabel*>("goalText");
+
+    if (goalLabel) {
+        switch (level) {
+        case 1:
+            goalLabel->setText("Level 1: Collect these healing herbs to help your grandmother:\n"
+                               "- Golden Currant: A bush with bright yellow flowers\n"
+                               "- Mormon Tea: A green plant with jointed stems\n"
+                               "- Creosote Bush: Has small yellow flowers and a strong smell\n\n"
+                               "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.");
+            break;
+        case 2:
+            goalLabel->setText("Level 2: Collect these healing herbs to help your grandmother:\n"
+                               "- Golden Currant: A bush with bright yellow flowers\n"
+                               "- Mormon Tea: A green plant with jointed stems\n"
+                               "- Creosote Bush: Has small yellow flowers and a strong smell\n"
+                               "- Osha: Has white flower clusters and fernlike leaves\n"
+                               "- Prairie Flax: Has blue-purple flowers\n\n"
+                               "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.");
+            break;
+        case 3:
+            goalLabel->setText("Level 3 (Master Challenge): Collect ALL these healing herbs:\n"
+                               "- Golden Currant: A bush with bright yellow flowers\n"
+                               "- Mormon Tea: A green plant with jointed stems\n"
+                               "- Creosote Bush: Has small yellow flowers and a strong smell\n"
+                               "- Osha: Has white flower clusters and fernlike leaves\n"
+                               "- Prairie Flax: Has blue-purple flowers\n"
+                               "- Prickly Pear Cactus: Has flat, paddle-shaped segments\n"
+                               "- Sagebrush: Silver-gray shrub with a strong fragrance\n\n"
+                               "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.");
+            break;
+        default:
+            goalLabel->setText("Collect herbs to help your grandmother and reach her house safely.");
+            break;
+        }
+    }
+}
+
+void MainWindow::createHelpButton(){
+    m_helpButton = new QPushButton("?", this);
+    m_helpButton->setFixedSize(40,40);
+
+    m_helpButton->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #3498db;"
+        "   color: white;"
+        "   border: none;"
+        "   border-radius: 20px;"
+        "   font-size: 18px;"
+        "   font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #2980b9;"
+        "}"
+        "QPushButton:pressed {"
+        "   background-color: #1d6fa5;"
+        "}"
+        );
+
+    // Position in top-right corner with some margin
+    updateButtonPosition();
+    m_helpButton->hide();
+
+    connect(m_helpButton, &QPushButton::clicked, this, &MainWindow::showHelpDialog);
+}
+
+void MainWindow::showHelpDialog() {
+    // Create the dialog
+    QDialog *helpDialog = new QDialog(this);
+    helpDialog->setWindowTitle("Game Help");
+    helpDialog->setWindowModality(Qt::WindowModal);
+    helpDialog->setFixedSize(500, 400);
+
+    // Create layout
+    QVBoxLayout *layout = new QVBoxLayout(helpDialog);
+    layout->setContentsMargins(20, 20, 20, 20);
+
+    // Get the appropriate help text
+    int currentLevel = gameWidget->gameManager()->currentLevel();
+    QString helpText;
+
+    switch (currentLevel) {
+    case 1:
+        helpText = "Level 1: Collect these healing herbs to help your grandmother:\n"
+                   "- Golden Currant: A bush with bright yellow flowers\n"
+                   "- Mormon Tea: A green plant with jointed stems\n"
+                   "- Creosote Bush: Has small yellow flowers and a strong smell\n\n"
+                   "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.";
+        break;
+    case 2:
+        helpText = "Level 2: Collect these healing herbs to help your grandmother:\n"
+                   "- Golden Currant: A bush with bright yellow flowers\n"
+                   "- Mormon Tea: A green plant with jointed stems\n"
+                   "- Creosote Bush: Has small yellow flowers and a strong smell\n"
+                   "- Osha: Has white flower clusters and fernlike leaves\n"
+                   "- Prairie Flax: Has blue-purple flowers\n\n"
+                   "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.";
+        break;
+    case 3:
+        helpText = "Level 3 (Master Challenge): Collect ALL these healing herbs:\n"
+                   "- Golden Currant: A bush with bright yellow flowers\n"
+                   "- Mormon Tea: A green plant with jointed stems\n"
+                   "- Creosote Bush: Has small yellow flowers and a strong smell\n"
+                   "- Osha: Has white flower clusters and fernlike leaves\n"
+                   "- Prairie Flax: Has blue-purple flowers\n"
+                   "- Prickly Pear Cactus: Has flat, paddle-shaped segments\n"
+                   "- Sagebrush: Silver-gray shrub with a strong fragrance\n\n"
+                   "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.";
+        break;
+    default:
+        helpText = "Collect herbs to help your grandmother and reach her house safely.";
+        break;
+    }
+
+    // Create text label
+    QLabel *helpLabel = new QLabel(helpText, helpDialog);
+    helpLabel->setWordWrap(true);
+    helpLabel->setAlignment(Qt::AlignLeft);
+
+    // Create close button
+    QPushButton *closeButton = new QPushButton("Close", helpDialog);
+    closeButton->setFixedSize(100, 30);
+    connect(closeButton, &QPushButton::clicked, helpDialog, &QDialog::accept);
+
+    // Add widgets to layout
+    layout->addWidget(helpLabel);
+    layout->addWidget(closeButton, 0, Qt::AlignCenter);
+
+    // Style the dialog
+    helpDialog->setStyleSheet(
+        "QDialog {"
+        "   background-color: #2c3e50;"
+        "}"
+        "QLabel {"
+        "   color: white;"
+        "   font-size: 14px;"
+        "}"
+        "QPushButton {"
+        "   background-color: #3498db;"
+        "   color: white;"
+        "   border: none;"
+        "   border-radius: 5px;"
+        "   font-size: 14px;"
+        "   padding: 5px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #2980b9;"
+        "}"
+        );
+
+    // Pause game while dialog is open
+    gameWidget->pauseGame();
+    helpDialog->exec();
+    gameWidget->resumeGame();
+
+    // Clean up
+    helpDialog->deleteLater();
+}
+
+void MainWindow::updateHelpButtonVisibility(GameState state){
+    // Only show during gameplay levels, hide in all other states
+    bool shouldShow = (state == Level1 || state == Level2 || state == Level3);
+    m_helpButton->setVisible(shouldShow);
+
+    if (shouldShow) {
+        m_helpButton->raise();
+        updateButtonPosition();
+    }
+}
+
+void MainWindow::updateButtonPosition() {
+    if (m_helpButton) {
+
+        int xPos = (width() - m_helpButton->width()) / 2;
+        m_helpButton->move(xPos, 20);
+    }
 }

@@ -1,18 +1,17 @@
 #include "vehicle.h"
 
 Vehicle::Vehicle(b2World &world, const b2Vec2 &position)
-    : m_chassis(nullptr)
-    , m_wheels{nullptr, nullptr}
+    : m_chassis(nullptr), m_wheels{nullptr, nullptr}, m_wheelJoints{nullptr, nullptr}
 {
-    // Define and create the chassis body
+    // --- Chassis ---
     b2BodyDef chassisBodyDef;
     chassisBodyDef.type = b2_dynamicBody;
     chassisBodyDef.position = position;
+    chassisBodyDef.fixedRotation = true; // Fix the car from turning.
     m_chassis = world.CreateBody(&chassisBodyDef);
 
-    // Define chassis shape as a rectangle (2m wide, 1m tall)
     b2PolygonShape chassisShape;
-    chassisShape.SetAsBox(1.0f, 0.5f);
+    chassisShape.SetAsBox(1.2f, 0.3f);
 
     b2FixtureDef chassisFixture;
     chassisFixture.shape = &chassisShape;
@@ -20,88 +19,84 @@ Vehicle::Vehicle(b2World &world, const b2Vec2 &position)
     chassisFixture.friction = 1.0f;
     m_chassis->CreateFixture(&chassisFixture);
 
-    // Define common wheel properties
-    b2BodyDef wheelBodyDef;
-    wheelBodyDef.type = b2_dynamicBody;
-    wheelBodyDef.position = position;
+    // --- Wheels ---
+    float wheelRadius = 0.15f;       // Radius of the wheels
+    float axleOffsetY = -0.4f;       // Vertical offset from the chassis to the axle
 
-    // --- Front Wheel ---
-    m_wheels[0] = world.CreateBody(&wheelBodyDef);
-    b2CircleShape frontWheelShape;
-    frontWheelShape.m_radius = 0.3f;
-    b2FixtureDef frontWheelFixture;
-    frontWheelFixture.shape = &frontWheelShape;
-    frontWheelFixture.density = 1.0f;
-    frontWheelFixture.friction = 2.0f;
-    m_wheels[0]->CreateFixture(&frontWheelFixture);
+    for (int i = 0; i < 2; ++i) {    // Loop for left (0) and right (1) wheels
+        b2BodyDef wheelBodyDef;
+        wheelBodyDef.type = b2_dynamicBody;  // Wheels are dynamic (can move and rotate)
 
-    // --- Rear Wheel ---
-    m_wheels[1] = world.CreateBody(&wheelBodyDef);
-    b2CircleShape rearWheelShape;
-    rearWheelShape.m_radius = 0.3f;
-    b2FixtureDef rearWheelFixture;
-    rearWheelFixture.shape = &rearWheelShape;
-    rearWheelFixture.density = 1.0f;
-    rearWheelFixture.friction = 2.0f;
-    m_wheels[1]->CreateFixture(&rearWheelFixture);
+        // Position the wheels on left (-0.9) and right (+0.9) relative to chassis
+        wheelBodyDef.position = position + b2Vec2((i == 0 ? -0.9f : 0.9f), axleOffsetY);
 
-    // Define revolute joints to attach wheels to chassis
-    b2RevoluteJointDef jointDef;
-    jointDef.bodyA = m_chassis;
-    jointDef.enableMotor = true;
-    jointDef.maxMotorTorque = 1000.0f;
+        // Create the wheel body in the Box2D world
+        m_wheels[i] = world.CreateBody(&wheelBodyDef);
 
-    // --- Front Wheel Joint ---
-    jointDef.bodyB = m_wheels[0];
-    jointDef.localAnchorA.Set(1.0f, -0.5f);  // right side
-    jointDef.localAnchorB.SetZero();
-    m_wheelJoints[0] = world.CreateJoint(&jointDef);
+        // Define the circular shape of the wheel
+        b2CircleShape wheelShape;
+        wheelShape.m_radius = wheelRadius;
 
-    // --- Rear Wheel Joint ---
-    jointDef.bodyB = m_wheels[1];
-    jointDef.localAnchorA.Set(-1.0f, -0.5f); // left side
-    jointDef.localAnchorB.SetZero();
-    m_wheelJoints[1] = world.CreateJoint(&jointDef);
+        // Create the fixture (physical properties) for the wheel
+        b2FixtureDef wheelFixture;
+        wheelFixture.shape = &wheelShape;
+        wheelFixture.density = 1.0f;     // Mass density
+        wheelFixture.friction = 2.0f;    // High friction for better traction
+        m_wheels[i]->CreateFixture(&wheelFixture);
+
+        // Define the joint that connects the wheel to the chassis
+        b2WheelJointDef jointDef;
+        jointDef.bodyA = m_chassis;       // Chassis is the base
+        jointDef.bodyB = m_wheels[i];     // Wheel is the connected body
+        jointDef.localAnchorA.Set((i == 0 ? -0.9f : 0.9f), axleOffsetY);  // Mounting point on chassis
+        jointDef.localAnchorB.SetZero();  // Mounting point on wheel (center)
+        jointDef.localAxisA.Set(0.0f, 1.0f); // Axis of suspension (vertical)
+
+        // Enable motor to allow driving control
+        jointDef.enableMotor = true;
+        jointDef.motorSpeed = 0.0f;           // Initial speed is 0
+        jointDef.maxMotorTorque = 100.0f;     // Maximum force to apply from motor
+
+        // Create the joint in the Box2D world and store it
+        m_wheelJoints[i] = (b2WheelJoint*)world.CreateJoint(&jointDef);
+    }
 }
 
 void Vehicle::ApplyDriveForce(float force)
 {
-    // Apply horizontal force to both wheels (simple traction)
-    m_wheels[0]->ApplyForceToCenter(b2Vec2(force, 0.0f), true);
-    m_wheels[1]->ApplyForceToCenter(b2Vec2(force, 0.0f), true);
+    for (int i = 0; i < 2; ++i) {
+        m_wheels[i]->ApplyForceToCenter(b2Vec2(force, 0.0f), true);
+    }
 }
 
 void Vehicle::ApplySteering(float angle)
 {
-    if (m_wheelJoints[0]) {
-        m_wheelJoints[0]->SetUserData(reinterpret_cast<void *>(static_cast<intptr_t>(angle)));
-    }
+    // No-op: Steering not implemented in this model
 }
 
-b2Body *Vehicle::GetChassis() const
+b2Body* Vehicle::GetChassis() const
 {
     return m_chassis;
 }
 
-b2Body *Vehicle::GetWheel(int index) const
+b2Body* Vehicle::GetWheel(int index) const
 {
-    return m_wheels[index];
+    return (index >= 0 && index < 2) ? m_wheels[index] : nullptr;
 }
 
 void Vehicle::Reset(const b2Vec2& position) {
     const float forwardOffset = 2.0f;
     b2Vec2 newPosition(position.x + forwardOffset, position.y);
 
-    // Reset chassis with new position
+    // Reset chassis
     m_chassis->SetTransform(newPosition, 0.0f);
     m_chassis->SetLinearVelocity(b2Vec2_zero);
     m_chassis->SetAngularVelocity(0.0f);
 
-    // Reset wheels relative to new position
     for (int i = 0; i < 2; ++i) {
         b2Vec2 wheelPos = newPosition;
-        wheelPos.x += (i == 0 ? 1.0f : -1.0f); // Front/back offset
-        wheelPos.y -= 0.5f; // Below chassis
+        wheelPos.x += (i == 0 ? -0.9f : 0.9f);
+        wheelPos.y -= 0.4f;
 
         m_wheels[i]->SetTransform(wheelPos, 0.0f);
         m_wheels[i]->SetLinearVelocity(b2Vec2_zero);

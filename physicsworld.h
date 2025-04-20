@@ -60,8 +60,6 @@ public:
 
     void Reset();
     void initializePlantDatabase();
-
-
 };
 
 #endif // PHYSICSWORLD_H

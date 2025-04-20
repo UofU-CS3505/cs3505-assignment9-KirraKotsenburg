@@ -133,8 +133,8 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     painter.drawPath(roadPath);
 
     float startX = 0.0f;
-    float endX = 990.0f;       
-    float wallY = -1.0f;       
+    float endX = 990.0f;
+    float wallY = -1.0f;
 
     QPointF leftHousePos = worldToScreenCamera(b2Vec2(startX, wallY));
     QPointF rightHousePos = worldToScreenCamera(b2Vec2(endX, wallY));
@@ -143,20 +143,32 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     drawHouse(painter, rightHousePos);
 
 
+
     // --- Draw Vehicle ---
+
     // Chassis
     QPointF chassisScreenPos = worldToScreenCamera(chassis->GetPosition());
     painter.save();
     painter.translate(chassisScreenPos);
     painter.rotate(chassis->GetAngle() * 180.0f / b2_pi);
-    QRectF chassisRect(-0.5, -0.25, 1.0, 0.5);
-    painter.setBrush(Qt::NoBrush);
-    painter.setPen(Qt::white);
     painter.scale(m_scale, m_scale);
-    painter.drawRect(chassisRect);
+
+    // Car body design
+    QPainterPath CarBody;
+    CarBody.moveTo(-1.2, 0.0);       // rear bottom
+    CarBody.lineTo(-1.2, -0.4);      // rear up
+    CarBody.lineTo(-0.8, -0.8);      // curve to roof
+    CarBody.lineTo(0.4, -0.8);       // roof
+    CarBody.lineTo(0.6, -0.5);       // sloped front
+    CarBody.lineTo(1.2, -0.4);       // bottom front up
+    CarBody.lineTo(1.2, 0.0);        // front bottom
+    CarBody.lineTo(-1.2, 0.0);       // close
+    CarBody.closeSubpath();
+
+    painter.setBrush(Qt::white);
+    painter.setPen(Qt::NoPen);
+    painter.drawPath(CarBody);
     painter.restore();
-
-
 
     // Wheels
     for (int i = 0; i < 2; ++i) {
@@ -165,22 +177,58 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         painter.save();
         painter.translate(wheelScreenPos);
         painter.rotate(wheel->GetAngle() * 180.0f / b2_pi);
-        QRectF wheelRect(-0.25, -0.25, 0.5, 0.5);
-        painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(Qt::white, 1.0));
         painter.scale(m_scale, m_scale);
-        painter.drawEllipse(wheelRect);
+
+        // Outer white tire
+        QRectF outerWheel(-0.3, -0.3, 0.6, 0.6);
+        painter.setBrush(Qt::gray);
+        painter.setPen(Qt::NoPen);
+        painter.drawEllipse(outerWheel);
+
+        // Inner white hub
+        QRectF innerWheel(-0.18, -0.18, 0.36, 0.36);
+        painter.setBrush(Qt::white);
+        painter.drawEllipse(innerWheel);
+
+        // Center dot (larger gray hub center)
+       QRectF centerDot(-0.045, -0.045, 0.09, 0.09);
+        painter.setBrush(Qt::black);
+        painter.drawEllipse(centerDot);
+
         painter.restore();
     }
 
     // --- Draw Hazards (Poisonous Plants) ---
+    // --- Draw Hazards (Plants) ---
     const auto &hazards = m_physicsWorld->getHazards();
+    std::vector<Hazard*> herbsToRender;
+    std::vector<Hazard*> poisonousToRender;
+
+    // First, separate herbs and poisonous plants
     for (auto hazard : hazards) {
+        if (hazard->type() == "herb") {
+            herbsToRender.push_back(hazard);
+        } else if (hazard->type() == "poisonous") {
+            poisonousToRender.push_back(hazard);
+        }
+    }
+
+    // Limit poisonous plants to at most 5
+    if (poisonousToRender.size() > 5) {
+        poisonousToRender.resize(5);
+    }
+
+    // Combine the filtered lists
+    std::vector<Hazard*> hazardsToRender;
+    hazardsToRender.insert(hazardsToRender.end(), herbsToRender.begin(), herbsToRender.end());
+    hazardsToRender.insert(hazardsToRender.end(), poisonousToRender.begin(), poisonousToRender.end());
+
+    // Now draw only the filtered hazards
+    for (auto hazard : hazardsToRender) {
         b2Body *body = hazard->getBody();
         b2Vec2 pos = body->GetPosition();
         float angle = body->GetAngle();
         QPointF screenPos = worldToScreenCamera(pos);
-
         painter.save();
         painter.translate(screenPos);
         painter.rotate(angle * 180.0f / b2_pi);
@@ -196,14 +244,36 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     QFont font = painter.font();
     font.setPointSize(14);
     painter.setFont(font);
+
+    // Draw health and score at top left
     painter.drawText(10, 20, QString("Health: %1").arg(m_gameManager->health()));
     painter.drawText(10, 40, QString("Score: %1").arg(m_gameManager->score()));
 
-    // Warning message if health is low
-    if (m_gameManager->health() < 50) {
-        painter.setPen(Qt::red);
-        //painter.drawText(width() / 2 - 50, 50, "Warning: Poisonous Plant!");
+    // Draw plants to collect info
+    QFont titleFont = font;
+    titleFont.setBold(true);
+    painter.setFont(titleFont);
+    painter.drawText(width() - 300, 20, "Collect all plants below to complete the game");
+
+    font.setBold(false);
+    painter.setFont(font);
+
+    // List all plants to collect with status
+    int yPos = 40;
+    const auto& plants = m_gameManager->plantsToCollect();
+    for (const auto& pair : plants) {
+        painter.drawText(width() - 300, yPos += 20,
+                         QString("%1 %2/%3").arg(pair.first)
+                             .arg(pair.second.collected)
+                             .arg(pair.second.total));
     }
+
+    // Show poisonous plants collected
+    painter.setPen(Qt::red);
+    painter.drawText(width() - 300, yPos += 30,
+                     QString("Poison Collected: %1/%2")
+                         .arg(m_gameManager->poisonousCollected())
+                         .arg(m_gameManager->maxPoisonousAllowed()));
 
     painter.end();
 
@@ -274,8 +344,16 @@ void WorldRenderer::resetGame()
     connect(m_contactListener, &GameContactListener::plantContact, this, &WorldRenderer::showPlantPopup);
     // Reset game state
     if (m_gameManager) {
-        m_gameManager->startGame();
+        int currentLevel = m_gameManager->currentLevel();
+        if (currentLevel == 0) {
+            // If not in a level state, start at level 1
+            m_gameManager->startSpecificLevel(1);
+        } else {
+            // Restart current level
+            m_gameManager->startSpecificLevel(currentLevel);
+        }
     }
+
 
     // Resume game
     resumeGame();
@@ -297,7 +375,11 @@ void WorldRenderer::pauseGame()
 
 void WorldRenderer::updateGameState()
 {
-    if (m_gameManager->gameState() == Playing) {
+    // Check if in any playable level state
+    if (m_gameManager->gameState() == Level1 ||
+        m_gameManager->gameState() == Level2 ||
+        m_gameManager->gameState() == Level3) {
+
         try {
             // Process physics updates
             m_physicsWorld->Step();
@@ -321,13 +403,16 @@ void WorldRenderer::updateGameState()
             float distance = b2Distance(vehiclePos, b2Vec2(houseX, houseY));
 
             if (distance <= arrivalThreshold) {
-                m_gameManager->gameClear(); // Call game clear function
+                if (m_gameManager->isLevelComplete()) {
+                    m_gameManager->gameClear(); // Successfully completed level
+                } else {
+                    m_gameManager->gameOver(); // Reached house but didn't collect all plants
+                }
             }
         }
         catch (...) {
             // If an exception occurs, safely pause the game
             pauseGame();
-            // Could display an error message here
         }
     }
 
@@ -338,56 +423,27 @@ void WorldRenderer::updateGameState()
 // worldrenderer.cpp - modify showPlantPopup
 // Modified showPlantPopup to show description in the same dialog
 void WorldRenderer::showPlantPopup(Hazard* hazard) {
-    QDialog dialog;
-    qDebug() << "Popup slot triggered!";
-    dialog.setWindowTitle("Plant Found: " + hazard->plantName());
+    QDialog* dialog = new QDialog;
+    dialog->setWindowTitle("Plant Found");
 
-    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    QVBoxLayout* layout = new QVBoxLayout(dialog);
 
-    // Image
+    // Image (check if it opens correctly)
     QPixmap image(hazard->imagePath());
-    if (image.isNull()) {
-        qDebug() << "Failed to load image from path:" << hazard->imagePath();
-    } else {
-        QLabel* imageLabel = new QLabel();
+    QLabel* imageLabel = new QLabel();
+    if (!image.isNull()) {
         image = image.scaled(480, 480, Qt::KeepAspectRatio);
         imageLabel->setPixmap(image);
-        imageLabel->setAlignment(Qt::AlignCenter);
-        layout->addWidget(imageLabel);
+    } else {
+        imageLabel->setText("Image not found");
     }
+    imageLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(imageLabel);
 
-    // Plant Name
-    QLabel* nameLabel = new QLabel(hazard->plantName());
-    nameLabel->setAlignment(Qt::AlignCenter);
-    QFont nameFont = nameLabel->font();
-    nameFont.setPointSize(16);
-    nameFont.setBold(true);
-    nameLabel->setFont(nameFont);
-    layout->addWidget(nameLabel);
-
-    // Plant Type Indicator
-    QString typeText = hazard->type() == "herb" ?
-                           "This appears to be a beneficial herb!" :
-                           "Warning: This may be poisonous!";
-
-    QLabel* typeLabel = new QLabel(typeText);
-    typeLabel->setAlignment(Qt::AlignCenter);
-    typeLabel->setStyleSheet(hazard->type() == "herb" ?
-                                 "color: green; font-weight: bold;" :
-                                 "color: red; font-weight: bold;");
-    layout->addWidget(typeLabel);
-
-    // Description Label (always visible now)
-    QLabel* descriptionLabel = new QLabel(hazard->description());
-    descriptionLabel->setAlignment(Qt::AlignCenter);
-    descriptionLabel->setWordWrap(true);
-    // descriptionLabel->setStyleSheet("margin: 10px; padding: 10px; background-color: #f0f0f0; border-radius: 5px;");
-    layout->addWidget(descriptionLabel);
-
-    // Text
-    QLabel* textLabel = new QLabel("Do you want to pick this plant?");
-    textLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(textLabel);
+    // Text prompt
+    QLabel* questionLabel = new QLabel("Do you want to pick this plant?");
+    questionLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(questionLabel);
 
     // Buttons
     QHBoxLayout* buttonLayout = new QHBoxLayout();
@@ -397,32 +453,78 @@ void WorldRenderer::showPlantPopup(Hazard* hazard) {
     buttonLayout->addWidget(noButton);
     layout->addLayout(buttonLayout);
 
-    QPointer<QDialog> dialogPtr = &dialog;
+    // Info elements (initially hidden)
+    QLabel* nameLabel = new QLabel(hazard->plantName());
+    nameLabel->setAlignment(Qt::AlignCenter);
+    QFont nameFont = nameLabel->font();
+    nameFont.setPointSize(16);
+    nameFont.setBold(true);
+    nameLabel->setFont(nameFont);
+    nameLabel->hide();
+    layout->addWidget(nameLabel);
 
-    QObject::connect(yesButton, &QPushButton::clicked, this, [dialogPtr]() {
-        if(dialogPtr) dialogPtr->accept();
+    QLabel* typeLabel = new QLabel(hazard->type() == "herb" ?
+                                       "This appears to be a beneficial herb!" :
+                                       "Warning: This may be poisonous!");
+    typeLabel->setAlignment(Qt::AlignCenter);
+    typeLabel->setStyleSheet(hazard->type() == "herb" ?
+                                 "color: green; font-weight: bold;" :
+                                 "color: red; font-weight: bold;");
+    typeLabel->hide();
+    layout->addWidget(typeLabel);
+
+    QLabel* descriptionLabel = new QLabel(hazard->description());
+    descriptionLabel->setAlignment(Qt::AlignCenter);
+    descriptionLabel->setWordWrap(true);
+    descriptionLabel->hide();
+    layout->addWidget(descriptionLabel);
+
+    QPushButton* closeButton = new QPushButton("Close");
+    closeButton->hide();
+    layout->addWidget(closeButton);
+
+    pauseGame();
+
+    // Use QPointer to avoid warning for local variables going out of scope for lambda
+    QPointer<QDialog> dialogPtr(dialog);
+    QPointer<QLabel> questionPtr(questionLabel);
+    QPointer<QLabel> namePtr(nameLabel);
+    QPointer<QLabel> typePtr(typeLabel);
+    QPointer<QLabel> descriptionPtr(descriptionLabel);
+    QPointer<QPushButton> yesPtr(yesButton);
+    QPointer<QPushButton> noPtr(noButton);
+    QPointer<QPushButton> closePtr(closeButton);
+
+    QObject::connect(noButton, &QPushButton::clicked, [dialogPtr]() {
+        if (dialogPtr) dialogPtr->reject();
     });
 
-    QObject::connect(noButton, &QPushButton::clicked, this, [dialogPtr]() {
-        if(dialogPtr) dialogPtr->reject();
+    QObject::connect(yesButton, &QPushButton::clicked, this, [=]() {
+        // Toggle display elements as before
+        if (questionPtr) questionPtr->hide();
+        if (yesPtr) yesPtr->hide();
+        if (noPtr) noPtr->hide();
+        if (namePtr) namePtr->show();
+        if (typePtr) typePtr->show();
+        if (descriptionPtr) descriptionPtr->show();
+        if (closePtr) closePtr->show();
+
+        // Game effects - track plant collection
+        bool isPoisonous = (hazard->type() == "poisonous");
+        m_gameManager->collectPlant(hazard->plantName(), isPoisonous);
+
+        // Force a repaint to update the HUD immediately
+        update();
     });
 
-    pauseGame(); // Pause the game while showing the popup
-    int ret = dialog.exec();
-    resumeGame(); // Resume the game after the popup is closed
+    QObject::connect(closeButton, &QPushButton::clicked, [dialogPtr]() {
+        if (dialogPtr) dialogPtr->accept();
+    });
 
-    if (ret == QDialog::Accepted) {
-        // Player chose to pick the plant
-        // No separate description box needed here
-
-        // Apply game effects based on plant type
-        if (hazard->type() == "herb") {
-            // Beneficial herb - increase score
-            m_gameManager->updateScore(10);
-        } else if (hazard->type() == "poisonous") {
-            // Poisonous plant - decrease health
-            m_gameManager->damage(1);
-        }
-    }
+    dialog->exec();
+    resumeGame();
+    // Clear up memory
+    delete dialog;
 }
+
 
