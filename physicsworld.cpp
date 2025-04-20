@@ -389,4 +389,3 @@ void PhysicsWorld::initializePlantDatabase()
                                "TODO.",
                                ":/safe/Plants/Safe_Plants/yarrow.jpg"});
 }
-

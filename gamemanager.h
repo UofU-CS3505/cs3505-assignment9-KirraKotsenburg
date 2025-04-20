@@ -24,6 +24,16 @@ private:
     int m_health;          // Player's health (e.g., max 100)
     int m_currentLevel;
 
+    struct PlantTracking {
+        int collected = 0;
+        int total = 0;
+    };
+
+    std::map<QString, PlantTracking> m_plantsToCollect; // Tracks plants to collect by name
+    int m_poisonousCollected = 0;                       // Count of poisonous plants collected
+    int m_maxPoisonousAllowed = 3;                      // Maximum poisonous plants allowed
+    QStringList m_levelPlants[3];
+
 public:
     explicit GameManager(QObject *parent = nullptr);
 
@@ -54,6 +64,13 @@ public:
     void nextLevel();
     int currentLevel();
     void startSpecificLevel(int level);
+
+    void setupLevelPlants(int level);
+    bool collectPlant(const QString& plantName, bool isPoisonous);
+    bool isLevelComplete() const;
+    int poisonousCollected() const { return m_poisonousCollected; }
+    int maxPoisonousAllowed() const { return m_maxPoisonousAllowed; }
+    const std::map<QString, PlantTracking>& plantsToCollect() const { return m_plantsToCollect; }
 
 public slots:
     // Called every frame (if needed for periodic updates)

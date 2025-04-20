@@ -417,16 +417,34 @@ void MainWindow::updateTutorialForLevel(int level) {
     if (goalLabel) {
         switch (level) {
         case 1:
-            goalLabel->setText("Level 1: Collect herbs to help your grandmother and reach her house safely.");
+            goalLabel->setText("Level 1: Collect these healing herbs to help your grandmother:\n"
+                               "- Golden Currant: A bush with bright yellow flowers\n"
+                               "- Mormon Tea: A green plant with jointed stems\n"
+                               "- Creosote Bush: Has small yellow flowers and a strong smell\n\n"
+                               "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.");
             break;
         case 2:
-            goalLabel->setText("Level 2: Collect at least 5 herbs and reach the house with 8+ health remaining.");
+            goalLabel->setText("Level 2: Collect these healing herbs to help your grandmother:\n"
+                               "- Golden Currant: A bush with bright yellow flowers\n"
+                               "- Mormon Tea: A green plant with jointed stems\n"
+                               "- Creosote Bush: Has small yellow flowers and a strong smell\n"
+                               "- Osha: Has white flower clusters and fernlike leaves\n"
+                               "- Prairie Flax: Has blue-purple flowers\n\n"
+                               "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.");
             break;
         case 3:
-            goalLabel->setText("Level 3: Master challenge! Collect all herbs without touching any poisonous plants.");
+            goalLabel->setText("Level 3 (Master Challenge): Collect ALL these healing herbs:\n"
+                               "- Golden Currant: A bush with bright yellow flowers\n"
+                               "- Mormon Tea: A green plant with jointed stems\n"
+                               "- Creosote Bush: Has small yellow flowers and a strong smell\n"
+                               "- Osha: Has white flower clusters and fernlike leaves\n"
+                               "- Prairie Flax: Has blue-purple flowers\n"
+                               "- Prickly Pear Cactus: Has flat, paddle-shaped segments\n"
+                               "- Sagebrush: Silver-gray shrub with a strong fragrance\n\n"
+                               "Avoid poisonous plants! Collecting 3 poisonous plants will end the game.");
             break;
         default:
-            goalLabel->setText("Put it later~");
+            goalLabel->setText("Collect herbs to help your grandmother and reach her house safely.");
             break;
         }
     }
