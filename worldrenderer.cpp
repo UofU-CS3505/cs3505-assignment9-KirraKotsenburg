@@ -143,20 +143,32 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     drawHouse(painter, rightHousePos);
 
 
+
     // --- Draw Vehicle ---
+
     // Chassis
     QPointF chassisScreenPos = worldToScreenCamera(chassis->GetPosition());
     painter.save();
     painter.translate(chassisScreenPos);
     painter.rotate(chassis->GetAngle() * 180.0f / b2_pi);
-    QRectF chassisRect(-0.5, -0.25, 1.0, 0.5);
-    painter.setBrush(Qt::NoBrush);
-    painter.setPen(Qt::white);
     painter.scale(m_scale, m_scale);
-    painter.drawRect(chassisRect);
+
+    // Car body design
+    QPainterPath CarBody;
+    CarBody.moveTo(-1.2, 0.0);       // rear bottom
+    CarBody.lineTo(-1.2, -0.4);      // rear up
+    CarBody.lineTo(-0.8, -0.8);      // curve to roof
+    CarBody.lineTo(0.4, -0.8);       // roof
+    CarBody.lineTo(0.6, -0.5);       // sloped front
+    CarBody.lineTo(1.2, -0.4);       // bottom front up
+    CarBody.lineTo(1.2, 0.0);        // front bottom
+    CarBody.lineTo(-1.2, 0.0);       // close
+    CarBody.closeSubpath();
+
+    painter.setBrush(Qt::white);
+    painter.setPen(Qt::NoPen);
+    painter.drawPath(CarBody);
     painter.restore();
-
-
 
     // Wheels
     for (int i = 0; i < 2; ++i) {
@@ -165,11 +177,24 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         painter.save();
         painter.translate(wheelScreenPos);
         painter.rotate(wheel->GetAngle() * 180.0f / b2_pi);
-        QRectF wheelRect(-0.25, -0.25, 0.5, 0.5);
-        painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(Qt::white, 1.0));
         painter.scale(m_scale, m_scale);
-        painter.drawEllipse(wheelRect);
+
+        // Outer white tire
+        QRectF outerWheel(-0.3, -0.3, 0.6, 0.6);
+        painter.setBrush(Qt::gray);
+        painter.setPen(Qt::NoPen);
+        painter.drawEllipse(outerWheel);
+
+        // Inner white hub
+        QRectF innerWheel(-0.18, -0.18, 0.36, 0.36);
+        painter.setBrush(Qt::white);
+        painter.drawEllipse(innerWheel);
+
+        // Center dot (larger gray hub center)
+       QRectF centerDot(-0.045, -0.045, 0.09, 0.09);
+        painter.setBrush(Qt::black);
+        painter.drawEllipse(centerDot);
+
         painter.restore();
     }
 
