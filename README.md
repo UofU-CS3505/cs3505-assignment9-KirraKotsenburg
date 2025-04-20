@@ -26,7 +26,7 @@ This game aims to:
 2. **Controls**: Use the arrow keys to drive your vehicle left and right
 3. **Plant Collection**: When you encounter a plant, choose whether to collect it or leave it
 4. **Win Condition**: Successfully collect all required herbs and reach the grandmother's house
-5. **Lose Condition**: Collect 3 poisonous plants or didn't collect all required herbs at the end.
+5. **Lose Condition**: Collect 3 poisonous plants or didn't collect all required herbs at the end
 
 ## Technical Details
 - **Language**: C++
@@ -66,4 +66,4 @@ The information provided in the game is for educational purposes only.
 - DongJoo Lee - Developer
 
 ## Acknowledgements
-- Utah Native Plant Society for information on local flora.
+- Utah Native Plant Society for information on local flora
