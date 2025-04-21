@@ -11,11 +11,13 @@
 #include <QPixmap>
 #include <QDebug>
 #include <QPointer>
+#include <random>
 
 WorldRenderer::WorldRenderer(QWidget *parent)
     : QWidget(parent)
     , m_physicsWorld(new PhysicsWorld(15)) // Limit to 15 hazards to prevent Box2D issues
     , m_scale(50.0f) // 50 pixels per meter
+    , m_background(":/images/Plants/Images/background.jpg")
 {
     // Initialize GameManager
     m_gameManager = new GameManager(this);
@@ -48,36 +50,6 @@ WorldRenderer::~WorldRenderer()
 void WorldRenderer::paintEvent(QPaintEvent *event)
 {
 
-    auto drawHouse = [&](QPainter& painter, const QPointF& screenPos) {
-        painter.save();
-
-        const float scaleFactor = 3.0f;
-        const float width = m_scale * scaleFactor;
-        const float height = m_scale * scaleFactor;
-        const float roofHeight = 0.7f * m_scale * scaleFactor;
-
-        QPointF adjustedPos = screenPos + QPointF(0, -height + m_scale * 0.85f);
-
-        painter.translate(adjustedPos);
-
-        // Draw base (square part)
-        QRectF base(-width / 2, 0, width, height);
-        painter.setBrush(Qt::gray);
-        painter.setPen(Qt::white);
-        painter.drawRect(base);
-
-        // Draw roof (triangle)
-        QPolygonF roof;
-        roof << QPointF(-width / 2 - 15, 0)
-             << QPointF(width / 2 + 15, 0)
-             << QPointF(0, -roofHeight);
-        painter.setBrush(Qt::darkRed);
-        painter.drawPolygon(roof);
-
-        painter.restore();
-    };
-
-
 
     Q_UNUSED(event);
     QPainter painter(this);
@@ -93,11 +65,30 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     Vehicle *vehicle = m_physicsWorld->GetVehicle();
     b2Body *chassis = vehicle->GetChassis();
     b2Vec2 camCenter = chassis->GetPosition();
+    float cameraYOffset = 4.0f;
 
-    auto worldToScreenCamera = [this, camCenter](const b2Vec2 &worldPos) -> QPointF {
+    // this code is for centering camer
+    // auto worldToScreenCamera = [this, camCenter](const b2Vec2 &worldPos) -> QPointF {
+    //     return QPointF((worldPos.x - camCenter.x) * m_scale + width() / 2,
+    //                    height() / 2 - (worldPos.y - camCenter.y) * m_scale);
+    // };
+
+    // In this version, the car is positioned lower than the cente
+    auto worldToScreenCamera = [this, camCenter, cameraYOffset](const b2Vec2 &worldPos) -> QPointF {
         return QPointF((worldPos.x - camCenter.x) * m_scale + width() / 2,
-                       height() / 2 - (worldPos.y - camCenter.y) * m_scale);
+                       height() / 2 - ((worldPos.y - camCenter.y - cameraYOffset) * m_scale));
     };
+
+    // draw background
+    if (!m_background.isNull()) {
+        int bgWidth = m_background.width();
+        float offsetX = chassis->GetPosition().x * m_scale;
+        int startX = -static_cast<int>(offsetX) % bgWidth - bgWidth;
+
+        for (int x = startX; x < width(); x += bgWidth) {
+            painter.drawPixmap(x, 0, bgWidth, height(), m_background);
+        }
+    }
 
     // --- Draw Road ---
     QPainterPath roadPath;
@@ -129,8 +120,45 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         }
     }
 
-    // Draw the entire road path using the painter
+
+    // grass style road.
+    QPen grassPen(QColor(100, 160, 80));  // green color
+    grassPen.setWidth(3);
+    grassPen.setStyle(Qt::SolidLine);
+
+    painter.setPen(grassPen);
+    painter.setBrush(Qt::NoBrush);
     painter.drawPath(roadPath);
+
+    auto drawHouse = [&](QPainter& painter, const QPointF& screenPos) {
+        painter.save();
+
+        const float scaleFactor = 3.0f;
+        const float width = m_scale * scaleFactor;
+        const float height = m_scale * scaleFactor;
+        const float roofHeight = 0.7f * m_scale * scaleFactor;
+
+        QPointF adjustedPos = screenPos + QPointF(0, -height + m_scale * 0.85f);
+
+        painter.translate(adjustedPos);
+
+        // Draw base (square part)
+        QRectF base(-width / 2, 0, width, height);
+        painter.setBrush(Qt::gray);
+        painter.setPen(Qt::white);
+        painter.drawRect(base);
+
+        // Draw roof (triangle)
+        QPolygonF roof;
+        roof << QPointF(-width / 2 - 15, 0)
+             << QPointF(width / 2 + 15, 0)
+             << QPointF(0, -roofHeight);
+        painter.setBrush(Qt::darkRed);
+        painter.drawPolygon(roof);
+
+        painter.restore();
+    };
+
 
     float startX = 0.0f;
     float endX = 990.0f;
@@ -165,10 +193,15 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     CarBody.lineTo(-1.2, 0.0);       // close
     CarBody.closeSubpath();
 
-    painter.setBrush(Qt::white);
+    painter.setBrush(QColor(200, 40, 40));  // 진한 빨간색
     painter.setPen(Qt::NoPen);
     painter.drawPath(CarBody);
     painter.restore();
+
+    // painter.setBrush(Qt::white);
+    // painter.setPen(Qt::NoPen);
+    // painter.drawPath(CarBody);
+    // painter.restore();
 
     // Wheels
     for (int i = 0; i < 2; ++i) {
@@ -181,13 +214,13 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
         // Outer white tire
         QRectF outerWheel(-0.3, -0.3, 0.6, 0.6);
-        painter.setBrush(Qt::gray);
+        painter.setBrush(Qt::black);
         painter.setPen(Qt::NoPen);
         painter.drawEllipse(outerWheel);
 
         // Inner white hub
         QRectF innerWheel(-0.18, -0.18, 0.36, 0.36);
-        painter.setBrush(Qt::white);
+        painter.setBrush(Qt::gray);
         painter.drawEllipse(innerWheel);
 
         // Center dot (larger gray hub center)
@@ -229,14 +262,42 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         b2Vec2 pos = body->GetPosition();
         float angle = body->GetAngle();
         QPointF screenPos = worldToScreenCamera(pos);
+
         painter.save();
         painter.translate(screenPos);
         painter.rotate(angle * 180.0f / b2_pi);
-        float r = 0.5f; // Fixed hazard radius
         painter.scale(m_scale, m_scale);
-        painter.drawEllipse(QRectF(-r, -r, 2*r, 2*r));
+
+        // 🌱 C++ 표준 랜덤 엔진 (위치 기반 seed)
+        std::seed_seq seed{static_cast<int>(pos.x * 1000), static_cast<int>(pos.y * 1000)};
+        std::mt19937 rng(seed);
+        std::uniform_real_distribution<float> greenOffset(0, 80);
+        std::uniform_real_distribution<float> ctrlOffset(-0.25f, 0.25f);
+        std::uniform_real_distribution<float> tipJitter(0.0f, 0.3f);
+
+        // Pen 색상과 두께
+        int green = 130 + static_cast<int>(greenOffset(rng));
+        painter.setPen(QPen(QColor(0, green, 0), 0.05));
+
+        // 풀 설정
+        int bladeCount = 13;
+        float baseSpread = 0.1f;
+        float bladeHeight = 1.6f;  // 크기를 2/3로 줄인 버전
+
+        for (int i = -bladeCount / 2; i <= bladeCount / 2; ++i) {
+            float offsetX = i * baseSpread;
+            float ctrlX = offsetX * 0.5f + ctrlOffset(rng);
+            float tipY = bladeHeight + tipJitter(rng);  // 양수: 위로 뾰족하게 자람
+
+            QPainterPath blade;
+            blade.moveTo(offsetX, 0.0f);
+            blade.quadTo(ctrlX, tipY * 0.5f, 0.0f, tipY);
+            painter.drawPath(blade);
+        }
+
         painter.restore();
     }
+
 
     // --- Draw HUD (Health and Score) ---
     painter.resetTransform();
@@ -286,16 +347,16 @@ void WorldRenderer::keyPressEvent(QKeyEvent *event)
 
     switch (event->key()) {
     case Qt::Key_Up:
-        vehicle->ApplyDriveForce(100.0f);
+        vehicle->ApplyDriveForce(60.0f);
         break;
     case Qt::Key_Down:
-        vehicle->ApplyDriveForce(-100.0f);
+        vehicle->ApplyDriveForce(-60.0f);
         break;
     case Qt::Key_Left:
-        vehicle->ApplyDriveForce(-100.0f);
+        vehicle->ApplyDriveForce(-60.0f);
         break;
     case Qt::Key_Right:
-        vehicle->ApplyDriveForce(100.0f);
+        vehicle->ApplyDriveForce(60.0f);
         break;
     }
 }
