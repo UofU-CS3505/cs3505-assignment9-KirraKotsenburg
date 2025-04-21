@@ -5,8 +5,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <qmessagebox.h>
-
+#include <QScrollArea>
 #include <QLabel>
+#include <QGroupBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -293,84 +294,165 @@ void MainWindow::showGameOverPopup()
     gameOverDialog->deleteLater();
 }
 
-void MainWindow::showGameClearPopup(){
-    // Prevent multiple dialogs
+void MainWindow::showGameClearPopup() {
     if (findChild<QDialog*>()) return;
-
     gameWidget->pauseGame();
 
-    // Get current level
     int currentLevel = gameWidget->gameManager()->currentLevel();
-    qDebug() << "Clear Popup Current level: " << currentLevel; // Should now be 1
-
     bool isMaxLevel = (currentLevel == 3);
 
-    // Create dialog
     QDialog *gameClearDialog = new QDialog(this);
     gameClearDialog->setWindowTitle("Level " + QString::number(currentLevel) + " Clear");
-    gameClearDialog->setFixedSize(500, 300);
+    gameClearDialog->setMinimumSize(800, 600);
 
-    // Create layout
-    QVBoxLayout *layout = new QVBoxLayout(gameClearDialog);
-    layout->setContentsMargins(20, 20, 20, 20);
-    layout->setSpacing(15);
+    QVBoxLayout *mainLayout = new QVBoxLayout(gameClearDialog);
+    QScrollArea *scrollArea = new QScrollArea(gameClearDialog);
+    scrollArea->setWidgetResizable(true);
+    QWidget *scrollContent = new QWidget();
+    QVBoxLayout *scrollLayout = new QVBoxLayout(scrollContent);
 
-    // Title
-    QLabel *titleLabel = new QLabel("Level " + QString::number(currentLevel) + " Clear", gameClearDialog);
+    // Header
+    QLabel *titleLabel = new QLabel("Level " + QString::number(currentLevel) + " Complete!", scrollContent);
     titleLabel->setAlignment(Qt::AlignCenter);
     QFont titleFont = titleLabel->font();
     titleFont.setPointSize(24);
     titleFont.setBold(true);
     titleLabel->setFont(titleFont);
 
-    // Score display
-    QLabel *scoreLabel = new QLabel(QString("Final Score: %1").arg(gameWidget->gameManager()->score()), gameClearDialog);
+    QLabel *scoreLabel = new QLabel(QString("Final Score: %1").arg(gameWidget->gameManager()->score()), scrollContent);
     scoreLabel->setAlignment(Qt::AlignCenter);
-    QFont scoreFont = scoreLabel->font();
-    scoreFont.setPointSize(18);
-    scoreLabel->setFont(scoreFont);
+    scoreLabel->setFont(QFont(scoreLabel->font().family(), 16));
 
-    // Message
-    QLabel *messageLabel = new QLabel("Your grandma makes it!", gameClearDialog);
-    messageLabel->setAlignment(Qt::AlignCenter);
-    messageLabel->setWordWrap(true);
+    scrollLayout->addWidget(titleLabel);
+    scrollLayout->addWidget(scoreLabel);
+    scrollLayout->addSpacing(20);
 
-    // Return button
-    QPushButton *returnButton = new QPushButton("Return to Main Menu", gameClearDialog);
-    returnButton->setFixedSize(200, 40);
+    // Plants by level
+    QLabel *plantsHeader = new QLabel("Medicinal Plants Collected:", scrollContent);
+    plantsHeader->setFont(QFont(plantsHeader->font().family(), 16, QFont::Bold));
+    scrollLayout->addWidget(plantsHeader);
+    scrollLayout->addSpacing(10);
 
-    // Next Level Button - only show if not at max level
-    QPushButton *nextButton = new QPushButton(isMaxLevel ? "Game Complete!" : "Next Level", gameClearDialog);
-    nextButton->setFixedSize(200, 40);
+    // Define all plants with their data
+    struct PlantData {
+        QString name;
+        QString description;
+        QString imagePath;
+    };
 
-    if (isMaxLevel) {
-        nextButton->setEnabled(false);  // Disable if at max level
+    QMap<QString, PlantData> allPlants = {
+        {"Golden Currant", {
+                               "Golden Currant",
+                               "- Affected parts: Berries and leaves.\n"
+                               "- Effects: Non-toxic in moderate amounts.\n"
+                               "- Use: Rich in antioxidants and vitamins; berries eaten fresh or dried.\n"
+                               " Leaves brewed as tea to reduce inflammation and support immunity.",
+                               ":/safe/Plants/Safe_Plants/golden_currant.jpg"
+                           }},
+        {"Mormon Tea", {
+                           "Mormon Tea",
+                           "- Affected parts: Stems.\n"
+                           "- Effects: Mild stimulant; can raise heart rate if consumed in large quantities.\n"
+                           "- Use: Used to stop bleeding, reduce fever, and treat digestive issues.\n"
+                           " Was historically brewed as tea.",
+                           ":/safe/Plants/Safe_Plants/mormon_tea.jpg"
+                       }},
+        {"Creosote Bush", {
+                              "Creosote Bush",
+                              "- Affected parts: Leaves and stems.\n"
+                              "- Effects: May cause liver or kidney irritation in large amounts.\n"
+                              "- Use: Traditionally used to boost the immune system and reduce symptoms of infections.\n"
+                              " Has antimicrobial properties and was used by Indigenous peoples for colds and wounds.",
+                              ":/safe/Plants/Safe_Plants/creosote_bush.jpg"
+                          }},
+        {"Osha", {
+                     "Osha",
+                     "- Affected parts: Root.\n"
+                     "- Effects: Generally safe in small doses.\n"
+                     "- Use: Used for respiratory issues, sleep aid, and inflammation.\n"
+                     " Often chewed or brewed into tea for sore throats and colds.\n"
+                     " Caution: Resembles Water Hemlock.",
+                     ":/safe/Plants/Safe_Plants/osha.jpg"
+                 }},
+        {"Prairie Flax", {
+                             "Prairie Flax",
+                             "- Affected parts: Seeds and leaves.\n"
+                             "- Effects: Non-toxic; excessive seed intake may cause digestive discomfort.\n"
+                             "- Use: Seeds soothe digestion and freshen breath; leaves contain menthol to relieve nasal congestion.\n"
+                             " Sometimes used for mild respiratory relief.\n"
+                             " Caution: Resembles Lupine/Blue Bonnet.",
+                             ":/safe/Plants/Safe_Plants/prairie_flax.jpg"
+                         }},
+        {"Prickly Pear Cactus", {
+                                    "Prickly Pear Cactus",
+                                    "- Affected parts: Pads and fruit.\n"
+                                    "- Effects: Safe when de-spined and properly prepared.\n"
+                                    "- Use: Eaten for fiber and antioxidants; used to regulate blood sugar and hydration.\n"
+                                    " Pads and fruit are both edible and nutritionally beneficial.",
+                                    ":/safe/Plants/Safe_Plants/prickly_pear_cactus.jpg"
+                                }}
+    };
+
+    // Get plants for current level
+    QStringList levelPlantNames;
+    switch(currentLevel) {
+    case 1: levelPlantNames = {"Golden Currant", "Mormon Tea", "Creosote Bush"}; break;
+    case 2: levelPlantNames = {"Golden Currant", "Mormon Tea", "Creosote Bush", "Osha", "Prairie Flax"}; break;
+    case 3: levelPlantNames = {"Golden Currant", "Mormon Tea", "Creosote Bush", "Osha", "Prairie Flax", "Prickly Pear Cactus"}; break;
     }
 
-    // Return Button -> triggers reject()
-    connect(returnButton, &QPushButton::clicked, gameClearDialog, &QDialog::reject);
+    // Display plants
+    for (const QString &plantName : levelPlantNames) {
+        if (!allPlants.contains(plantName)) continue;
 
-    // Next Button -> triggers accept()
-    connect(nextButton, &QPushButton::clicked, gameClearDialog, &QDialog::accept);
+        const PlantData &plant = allPlants[plantName];
+        QGroupBox *plantGroup = new QGroupBox(plant.name, scrollContent);
+        QHBoxLayout *plantLayout = new QHBoxLayout(plantGroup);
 
-    // Add widgets to layout
-    layout->addStretch();
-    layout->addWidget(titleLabel);
-    layout->addSpacing(20);
-    layout->addWidget(scoreLabel);
-    layout->addWidget(messageLabel);
-    layout->addStretch();
+        // Plant image
+        QLabel *imageLabel = new QLabel();
+        QPixmap pixmap(plant.imagePath);
+        if (!pixmap.isNull()) {
+            imageLabel->setPixmap(pixmap.scaledToWidth(150, Qt::SmoothTransformation));
+        }
 
+        // Plant description
+        QLabel *descLabel = new QLabel(plant.description);
+        descLabel->setWordWrap(true);
+        descLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+        plantLayout->addWidget(imageLabel);
+        plantLayout->addWidget(descLabel, 1);
+        scrollLayout->addWidget(plantGroup);
+    }
+
+    scrollLayout->addStretch();
+    scrollContent->setLayout(scrollLayout);
+    scrollArea->setWidget(scrollContent);
+    mainLayout->addWidget(scrollArea);
+
+    // Buttons
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->addWidget(nextButton);
-    buttonLayout->addStretch();
-    buttonLayout->addWidget(returnButton);
-    layout->addLayout(buttonLayout);
+    QPushButton *nextButton = new QPushButton(isMaxLevel ? "Game Complete!" : "Next Level");
+    QPushButton *returnButton = new QPushButton("Return to Main Menu");
 
-    // Style the dialog (unchanged)
+    nextButton->setFixedSize(150, 40);
+    returnButton->setFixedSize(150, 40);
+
+    if (isMaxLevel) nextButton->setEnabled(false);
+
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(nextButton);
+    buttonLayout->addWidget(returnButton);
+    buttonLayout->addStretch();
+    mainLayout->addLayout(buttonLayout);
+
+    // Style
     gameClearDialog->setStyleSheet(
         "QDialog { background-color: #2c3e50; }"
         "QLabel { color: #ecf0f1; }"
+        "QGroupBox { border: 1px solid #3498db; border-radius: 5px; margin-top: 10px; }"
+        "QGroupBox::title { color: #ecf0f1; subcontrol-origin: margin; left: 10px; }"
         "QPushButton {"
         "   background-color: #3498db;"
         "   color: white;"
@@ -381,34 +463,27 @@ void MainWindow::showGameClearPopup(){
         "QPushButton:hover { background-color: #2980b9; }"
         );
 
-    // Show the Dialog result
+    // Connections
+    connect(returnButton, &QPushButton::clicked, gameClearDialog, &QDialog::reject);
+    connect(nextButton, &QPushButton::clicked, gameClearDialog, &QDialog::accept);
+
     int result = gameClearDialog->exec();
 
     if (result == QDialog::Rejected) {
-        // Return to menu - game will restart at the same level
         gameWidget->pauseGame();
-
-        // Reset the physics world AND the game manager
         gameWidget->resetGame();
-
-        // Make sure the gameManager is in a clean MainMenu state, NOT GameClear
         gameWidget->gameManager()->startSpecificLevel(currentLevel);
-
-        // Now switch to the main menu
         m_stackWidget->setCurrentIndex(0);
     }
     else if (result == QDialog::Accepted && !isMaxLevel) {
-        // Advance to next level and show tutorial with updated goals
         gameWidget->gameManager()->nextLevel();
         updateTutorialForLevel(gameWidget->gameManager()->currentLevel());
-        m_stackWidget->setCurrentIndex(1);  // Navigate to tutorial page
+        m_stackWidget->setCurrentIndex(1);
     }
-
 
     gameClearDialog->deleteLater();
 }
 
-// New method to update tutorial goals for each level
 void MainWindow::updateTutorialForLevel(int level) {
     // Find the goal text label in the tutorial widget
     QWidget* tutorialWidget = m_stackWidget->widget(1);
