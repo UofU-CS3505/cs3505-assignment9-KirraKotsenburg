@@ -21,6 +21,7 @@ private:
 
     GameManager *m_gameManager;   // Game state manager
     GameContactListener *m_contactListener;
+    QPixmap m_background;
 
 
 public:

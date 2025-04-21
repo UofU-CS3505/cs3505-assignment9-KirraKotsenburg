@@ -32,4 +32,7 @@
     <qresource prefix="/json">
         <file>Plants/plants.json</file>
     </qresource>
+    <qresource prefix="/images">
+            <file>Plants/Images/background.jpg</file>
+        </qresource>
 </RCC>
