@@ -40,7 +40,3 @@ void GameContactListener::BeginContact(b2Contact* contact) {
 void GameContactListener::EndContact(b2Contact* contact) {
     // Optional: handle end of contact event if needed
 }
-
-void GameContactListener::clearProcessedBodies() {
-    m_processedBodies.clear();
-}
