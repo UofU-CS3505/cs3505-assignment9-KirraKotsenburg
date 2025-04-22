@@ -3,7 +3,7 @@
  * @brief Implementation of the GameContactListener class
  * @author Jason Chang
  *
- * Checked by Arthur Mo, Kirra Kotsenburg
+ * Checked by Arthur Mo, Kirra Kotsenburg, Jay Lee
  */
 
 #include "gameContactListener.h"

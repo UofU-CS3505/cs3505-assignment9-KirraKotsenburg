@@ -4,7 +4,7 @@
  *
  * @author Jason Chang
  *
- * Checked by
+ * Checked by Arthur Mo, Jay Lee
  */
 
 #ifndef VEHICLE_H

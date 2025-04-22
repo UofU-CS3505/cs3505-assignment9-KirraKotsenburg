@@ -3,7 +3,7 @@
  * @brief Defines the GameManager class that handles game state and player progression
  * @author Jason Chang
  *
- * Checked by Arthur Mo, Kirra Kotsenburg
+ * Checked by Arthur Mo, Kirra Kotsenburg, Jay Lee
  */
 
 #ifndef GAMEMANAGER_H

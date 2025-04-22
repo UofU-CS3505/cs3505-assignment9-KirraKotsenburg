@@ -4,7 +4,7 @@
  *
  * @author Jason Chang
  *
- * Checked by
+ * Checked by Arthur Mo, Kirra Kotsenburg, Jay Lee
  */
 
 #include "worldrenderer.h"
