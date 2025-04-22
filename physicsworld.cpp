@@ -154,18 +154,46 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
         hazardPositions.push_back(position);
     }
 
-    // Place plants at random positions
-    for (int i = 0; i < actualHazardCount; i++) {
-        float hazardX = hazardPositions[i];
+    // Place plants at random positions (ensure they stay on the road)
+    int placedCount = 0;
+    int attempts = 0;
+    int maxPlacementAttempts = 100;
 
-        // Find the road segment this position corresponds to
+    while (placedCount < actualHazardCount && attempts < maxPlacementAttempts) {
+        float hazardX = hazardPositions[placedCount];
+
         int segmentIndex = static_cast<int>(hazardX / segmentWidth);
-        segmentIndex = std::min(segmentIndex, roadPointCount - 2); // Ensure within valid range
+        segmentIndex = std::min(segmentIndex, roadPointCount - 2);
 
-        // Calculate position within segment (0.0 to 1.0)
+        // Skip upward slopes
+        float slope = deltaY[segmentIndex % segmentCount];
+        if (slope > 0.0f) {
+            attempts++;
+            // Try finding a new position
+            float newPosition;
+            bool validPosition;
+            int innerAttempts = 0;
+            do {
+                validPosition = true;
+                newPosition = roadStartX + (static_cast<float>(rand()) / RAND_MAX) * roadLength;
+
+                for (float existingPos : hazardPositions) {
+                    if (std::abs(newPosition - existingPos) < minSpacing) {
+                        validPosition = false;
+                        break;
+                    }
+                }
+
+                innerAttempts++;
+            } while (!validPosition && innerAttempts < 20);
+
+            hazardPositions[placedCount] = newPosition;
+            continue;
+        }
+
+        // Interpolate Y position
         float segmentPosition = (hazardX - segmentIndex * segmentWidth) / segmentWidth;
 
-        // Calculate Y value based on road height at this position
         float startY = -2.0f;
         for (int j = 0; j < segmentIndex; j++) {
             startY += deltaY[j % segmentCount];
@@ -173,15 +201,11 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
 
         float endY = startY + deltaY[segmentIndex % segmentCount];
         float hazardY = startY + segmentPosition * (endY - startY);
-
-        // Add offset to place above the road
         hazardY += 0.7f;
 
-        // Get selected plant from database
-        int plantIndex = selectedPlantIndices[i];
+        int plantIndex = selectedPlantIndices[placedCount];
         const PlantData& plant = m_plantDatabase[plantIndex];
 
-        // Create hazard with selected plant data
         m_hazards.push_back(new Hazard(
             m_world,
             b2Vec2(hazardX, hazardY),
@@ -191,6 +215,8 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
             plant.description,
             plant.imagePath
             ));
+
+        placedCount++;
     }
 }
 
