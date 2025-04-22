@@ -92,43 +92,57 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // --- Draw Road ---
     QPainterPath roadPath;
+    QPainterPath filledRoadPath;
+    QVector<QPointF> upperPoints;
 
     // Get the list of bodies in the Box2D world
     const auto& roadBody = m_physicsWorld->GetWorld().GetBodyList();
 
     // Loop through all bodies in the world
     for (b2Body* body = roadBody; body; body = body->GetNext()) {
-
         // Loop through all fixtures of the body
         for (b2Fixture* f = body->GetFixtureList(); f; f = f->GetNext()) {
-
             // Check if the fixture is a chain shape (used for the road)
             if (f->GetType() == b2Shape::e_chain) {
                 b2ChainShape* chain = static_cast<b2ChainShape*>(f->GetShape());
 
                 // If the chain has points, start drawing
                 if (chain->m_count > 0) {
+                    QPointF firstPoint = worldToScreenCamera(chain->m_vertices[0]);
+                    upperPoints.append(firstPoint);
+
                     // Move to the first point of the chain
-                    roadPath.moveTo(worldToScreenCamera(chain->m_vertices[0]));
+                    roadPath.moveTo(firstPoint);
+                    filledRoadPath.moveTo(firstPoint);
 
                     // Connect lines to each subsequent point
                     for (int i = 1; i < chain->m_count; ++i) {
-                        roadPath.lineTo(worldToScreenCamera(chain->m_vertices[i]));
+                        QPointF point = worldToScreenCamera(chain->m_vertices[i]);
+                        roadPath.lineTo(point);
+                        filledRoadPath.lineTo(point);
+                        upperPoints.append(point);
                     }
                 }
             }
         }
     }
 
+    if (!upperPoints.isEmpty()) {
+        QPointF lastPoint = upperPoints.last();
+        QPointF bottomRight = QPointF(lastPoint.x(), height());
+        filledRoadPath.lineTo(bottomRight);
 
-    // grass style road.
-    QPen grassPen(QColor(100, 160, 80));  // green color
-    grassPen.setWidth(3);
-    grassPen.setStyle(Qt::SolidLine);
+        QPointF bottomLeft = QPointF(upperPoints.first().x(), height());
+        filledRoadPath.lineTo(bottomLeft);
 
-    painter.setPen(grassPen);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawPath(roadPath);
+        filledRoadPath.lineTo(upperPoints.first());
+    }
+
+    QBrush roadBrush(QColor(210, 180, 140));  // road fill color
+
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(roadBrush);
+    painter.drawPath(filledRoadPath);
 
     auto drawHouse = [&](QPainter& painter, const QPointF& screenPos) {
         painter.save();
