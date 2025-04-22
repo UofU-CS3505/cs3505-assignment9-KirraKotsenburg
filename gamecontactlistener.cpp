@@ -1,17 +1,10 @@
-// gamecontactlistener.cpp
 #include "gameContactListener.h"
 #include <cstring>
 #include "physicsworld.h"
 #include <QDebug>
-#include <unordered_set>
-
-// Add this at file scope to track which hazards have been processed
-namespace {
-std::unordered_set<b2Body*> g_processedBodies;
-}
 
 GameContactListener::GameContactListener(GameManager *gameManager, PhysicsWorld *physicsWorld)
-    : m_gameManager(gameManager), m_physicsWorld(physicsWorld)
+    : m_gameManager(gameManager), m_physicsWorld(physicsWorld), m_processedBodies() // 초기화 추가
 {
 }
 
@@ -31,9 +24,9 @@ void GameContactListener::BeginContact(b2Contact* contact) {
         hazardBody = bodyB;
     }
 
-    if (hazard && g_processedBodies.find(hazardBody) == g_processedBodies.end()) {
+    if (hazard && m_processedBodies.find(hazardBody) == m_processedBodies.end()) {
         // Mark this body as processed to prevent duplicate processing
-        g_processedBodies.insert(hazardBody);
+        m_processedBodies.insert(hazardBody);
 
         // Queue the hazard for removal
         m_physicsWorld->QueueForRemoval(hazard->getBody());
@@ -46,4 +39,8 @@ void GameContactListener::BeginContact(b2Contact* contact) {
 
 void GameContactListener::EndContact(b2Contact* contact) {
     // Optional: handle end of contact event if needed
+}
+
+void GameContactListener::clearProcessedBodies() {
+    m_processedBodies.clear();
 }

@@ -1,9 +1,9 @@
-// gamecontactlistener.h - add PhysicsWorld forward declaration
 #ifndef GAMECONTACTLISTENER_H
 #define GAMECONTACTLISTENER_H
 
 #include <QObject>
 #include <box2d/box2d.h>
+#include <unordered_set>
 #include "gameManager.h"
 #include "hazard.h"
 
@@ -16,6 +16,7 @@ class GameContactListener : public QObject, public b2ContactListener
 private:
     GameManager *m_gameManager;
     PhysicsWorld *m_physicsWorld;
+    std::unordered_set<b2Body*> m_processedBodies;
 
 signals:
     void plantContact(Hazard *hazard);
@@ -24,6 +25,8 @@ public:
     GameContactListener(GameManager *gameManager, PhysicsWorld *physicsWorld);
     virtual void BeginContact(b2Contact* contact) override;
     virtual void EndContact(b2Contact* contact) override;
+
+    void clearProcessedBodies();
 };
 
 #endif // GAMECONTACTLISTENER_H
