@@ -232,7 +232,7 @@ void b2Contact::Update(b2ContactListener* listener)
 
 	if (wasTouching == false && touching == true && listener)
 	{
-		listener->BeginContact(this);
+		listener->beginContact(this);
 	}
 
 	if (wasTouching == true && touching == false && listener)

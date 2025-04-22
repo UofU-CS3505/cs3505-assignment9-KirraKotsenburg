@@ -84,7 +84,7 @@ public:
 	virtual ~b2ContactListener() {}
 
 	/// Called when two fixtures begin to touch.
-	virtual void BeginContact(b2Contact* contact) { B2_NOT_USED(contact); }
+	virtual void beginContact(b2Contact* contact) { B2_NOT_USED(contact); }
 
 	/// Called when two fixtures cease to touch.
 	virtual void EndContact(b2Contact* contact) { B2_NOT_USED(contact); }

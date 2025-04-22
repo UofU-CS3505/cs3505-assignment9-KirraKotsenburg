@@ -1,3 +1,12 @@
+/**
+ * @file physicsworld.h
+ * @brief Defines the PhysicsWorld class that manages Box2D physics simulation
+ *
+ * @author Jason Chang
+ *
+ * Checked by
+ */
+
 #ifndef PHYSICSWORLD_H
 #define PHYSICSWORLD_H
 
@@ -16,49 +25,91 @@ struct PlantData {
     QString imagePath;    // Path to plant image
 };
 
-// PhysicsWorld manages the Box2D physics world, vehicle, and hazards
-class PhysicsWorld
-{
-private:
-    b2World m_world;                     // Box2D physics world
-    float m_timeStep;                   // Simulation time step
-    int m_velocityIterations;          // Velocity constraint solver iterations
-    int m_positionIterations;          // Position constraint solver iterations
+/**
+ * @brief PhysicsWorld manages the Box2D physics world, vehicle, and hazards
+ */
+class PhysicsWorld {
 
-    Vehicle *m_vehicle;                // The player's controllable vehicle
-    std::vector<Hazard*> m_hazards;   // List of hazardous plants in the world
-    b2ContactListener* m_contactListener; // Contact listener for collision detection
-    std::vector<b2Body*> m_removeQueue; // Bodies queued for removal
-    std::vector<PlantData> m_plantDatabase;
+private:
+    b2World m_world;                    // Box2D physics world
+    float m_timeStep;                   // Simulation time step
+    int m_velocityIterations;           // Velocity constraint solver iterations
+    int m_positionIterations;           // Position constraint solver iterations
+
+    Vehicle *m_vehicle;                     // The player's controllable vehicle
+    std::vector<Hazard*> m_hazards;         // List of hazardous plants in the world
+    b2ContactListener* m_contactListener;   // Contact listener for collision detection
+    std::vector<b2Body*> m_removeQueue;     // Bodies queued for removal
+    std::vector<PlantData> m_plantDatabase; // Database of all plant information
 
 
 
 public:
-    // Constructor sets up world, vehicle, terrain, and hazards
-    PhysicsWorld();
-    PhysicsWorld(int hazardCount = 10);
 
-    // Destructor cleans up dynamically allocated objects
+    /**
+     * @brief Default constructor
+     */
+    PhysicsWorld();
+
+    /**
+     * @brief Constructor that sets up world, vehicle, terrain, and hazards
+     * @param hazardCount Number of hazards to create in the world
+     */
+    PhysicsWorld(int hazardCount);
+
+    /**
+     * @brief Destructor cleans up dynamically allocated objects
+     */
     ~PhysicsWorld();
 
-    // Advances the physics simulation by one step
-    void Step();
+    /**
+     * @brief Advances the physics simulation by one step
+     */
+    void step();
 
-    // Returns a reference to the Box2D world
-    b2World &GetWorld();
+    /**
+     * @brief Returns a reference to the Box2D world
+     * @return Reference to the Box2D world
+     */
+    b2World &getWorld();
 
-    // Returns a pointer to the vehicle
-    Vehicle *GetVehicle() const;
+    /**
+     * @brief Returns a pointer to the vehicle
+     * @return Pointer to the player's vehicle
+     */
+    Vehicle *getVehicle() const;
 
-    // Returns the list of hazards
+    /**
+     * @brief Returns the list of hazards
+     * @return Constant reference to the vector of hazards
+     */
     const std::vector<Hazard*>& getHazards() const { return m_hazards; }
 
-    void SetContactListener(b2ContactListener* listener);
+    /**
+     * @brief Sets the contact listener for collision detection
+     * @param listener Pointer to a b2ContactListener object
+     */
+    void setContactListener(b2ContactListener* listener);
 
-    void QueueForRemoval(b2Body* hazardBody);
-    void ProcessRemovalQueue();
+    /**
+     * @brief Queues a hazard body for safe removal
+     * @param hazardBody Pointer to the Box2D body to remove
+     */
+    void queueForRemoval(b2Body* hazardBody);
 
-    void Reset();
+    /**
+     * @brief Processes the queue of bodies marked for removal
+     */
+    void processRemovalQueue();
+
+    /**
+     * @brief Resets the physics world to initial state
+     */
+    void reset();
+
+    /**
+     * @brief Initializes the plant database with information
+     */
     void initializePlantDatabase();
 };
 

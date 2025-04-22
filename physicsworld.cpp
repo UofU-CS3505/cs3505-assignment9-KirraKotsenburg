@@ -1,19 +1,26 @@
+/**
+ * @file physicsworld.cpp
+ * @brief Implementation of the PhysicsWorld class
+ *
+ * @author Jason Chang
+ *
+ * Checked by
+ */
+
 #include "physicsworld.h"
 #include "hazard.h"
 
-PhysicsWorld::PhysicsWorld(int hazardCount)
-    : m_world(b2Vec2(0.0f, -9.8f))  // Set gravity: downward 9.8 m/s²
-    , m_timeStep(1.0f / 60.0f)      // 60 FPS simulation
-    , m_velocityIterations(6)
-    , m_positionIterations(2)
-    , m_contactListener(nullptr)
-{
+PhysicsWorld::PhysicsWorld(int hazardCount) : m_world(b2Vec2(0.0f, -9.8f)),  // Set gravity: downward 9.8 m/s²
+                                              m_timeStep(1.0f / 60.0f),      // 60 FPS simulation
+                                              m_velocityIterations(6),
+                                              m_positionIterations(2),
+                                              m_contactListener(nullptr) {
+
     initializePlantDatabase();
 
     srand(static_cast<unsigned int>(time(nullptr)));
 
     // Create the player's vehicle at an initial position
-    //m_vehicle = new Vehicle(m_world, b2Vec2(0.0f, 10.0f));
     m_vehicle = new Vehicle(m_world, b2Vec2(10.0f, 5.0f));
 
 
@@ -23,8 +30,7 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
     b2Body *groundBody = m_world.CreateBody(&groundBodyDef);
 
 
-    // part for making road---------------------------------
-    // Define smooth hill road pattern
+    // Create road with terrain features
     const int segmentCount = 10;           // Number of points per pattern
     const int repetitions = 10;            // How many times the pattern is repeated
     const int roadPointCount = segmentCount * repetitions;
@@ -54,8 +60,6 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
         roadPoints[i] = b2Vec2(x, currentY);
     }
 
-
-
     // Create a Box2D chain shape using the generated points
     b2ChainShape roadChain;
     roadChain.CreateChain(roadPoints, roadPointCount);
@@ -80,13 +84,9 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
     rightShape.SetAsBox(0.5f, 10.0f);
     rightWall->CreateFixture(&rightShape, 0.0f);
 
+    // --------Generate random hazards along the road--------
 
-    // -----------------------------------------------------
-
-    // Generate random hazards along the road
-    // Replace the plant placement section with this code
-
-    // Calculate road bounds
+    // Calculate road bounds for hazard placement
     float roadStartX = 15.0f; // Safe margin from start
     float roadEndX = (roadPointCount - 1) * segmentWidth - 15.0f; // Safe margin from end
     float roadLength = roadEndX - roadStartX;
@@ -95,6 +95,7 @@ PhysicsWorld::PhysicsWorld(int hazardCount)
     std::vector<int> poisonousPlantIndices;
     std::vector<int> herbPlantIndices;
 
+    // Categorize plants by type
     for (int i = 0; i < m_plantDatabase.size(); i++) {
         if (m_plantDatabase[i].type == "poisonous") {
             poisonousPlantIndices.push_back(i);
@@ -233,26 +234,26 @@ PhysicsWorld::~PhysicsWorld()
 }
 
 // Advance the simulation one time step
-void PhysicsWorld::Step()
+void PhysicsWorld::step()
 {
     m_world.Step(m_timeStep, m_velocityIterations, m_positionIterations);
-    ProcessRemovalQueue();
+    processRemovalQueue();
 }
 
 // Accessor for Box2D world
-b2World &PhysicsWorld::GetWorld()
+b2World &PhysicsWorld::getWorld()
 {
     return m_world;
 }
 
 // Accessor for the player vehicle
-Vehicle *PhysicsWorld::GetVehicle() const
+Vehicle *PhysicsWorld::getVehicle() const
 {
     return m_vehicle;
 }
 
 
-void PhysicsWorld::SetContactListener(b2ContactListener* listener) {
+void PhysicsWorld::setContactListener(b2ContactListener* listener) {
     if (m_contactListener) {
         delete m_contactListener;
     }
@@ -260,12 +261,12 @@ void PhysicsWorld::SetContactListener(b2ContactListener* listener) {
     m_world.SetContactListener(listener);
 }
 
-void PhysicsWorld::QueueForRemoval(b2Body* hazardBody) {
+void PhysicsWorld::queueForRemoval(b2Body* hazardBody) {
     // Add the body to the removal queue
     m_removeQueue.push_back(hazardBody);
 }
 
-void PhysicsWorld::ProcessRemovalQueue() {
+void PhysicsWorld::processRemovalQueue() {
     // Process only a limited number of bodies per frame to avoid stressing Box2D
     const int maxRemovalsPerFrame = 3;
     int removalsThisFrame = 0;
@@ -310,8 +311,8 @@ void PhysicsWorld::ProcessRemovalQueue() {
     }
 }
 
-// physicsworld.cpp - update Reset method
-void PhysicsWorld::Reset() {
+// physicsworld.cpp - update reset method
+void PhysicsWorld::reset() {
     // Clear existing hazards
     for(auto hazard : m_hazards) {
         m_world.DestroyBody(hazard->getBody());
@@ -348,7 +349,7 @@ void PhysicsWorld::Reset() {
         ));
 
     // Reset vehicle
-    m_vehicle->Reset(b2Vec2(0.0f, 10.0f));
+    m_vehicle->reset(b2Vec2(0.0f, 10.0f));
 }
 
 // Add this new method implementation after the constructor

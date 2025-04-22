@@ -1,3 +1,12 @@
+/**
+ * @file mainwindow.cpp
+ * @brief Implementation of the MainWindow class
+ *
+ * @author Jason Chang
+ *
+ * Checked by
+ */
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "worldrenderer.h"
@@ -11,8 +20,8 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-{
+    , ui(new Ui::MainWindow) {
+
     ui->setupUi(this);
 
     // Create a QStackedWidget: index 0 = Main Menu, index 1 = Tutorial, index 2 = Game
@@ -23,29 +32,33 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *menuWidget = new QWidget(this);
     QVBoxLayout *menuLayout = new QVBoxLayout(menuWidget);
 
+    // Create title label with large font
     QLabel *titleLabel = new QLabel("Save Sick Grandma", menuWidget);
     titleLabel->setAlignment(Qt::AlignCenter);
     QFont titleFont = titleLabel->font();
     titleFont.setPointSize(24);
     titleLabel->setFont(titleFont);
 
-    QLabel *infoLabel = new QLabel("You’re collecting herbs to help your sick grandmother.\n"
+    // Create info label with game instructions
+    QLabel *infoLabel = new QLabel("You're collecting herbs to help your sick grandmother.\n"
                                    "But beware—some plants are poisonous!\n\n"
                                    "Use arrow keys to drive the tractor.", menuWidget);
     infoLabel->setAlignment(Qt::AlignCenter);
 
+    // Create start button
     QPushButton *startButton = new QPushButton("START", menuWidget);
     startButton->setFixedSize(150, 40);
 
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startGame);
 
+    // Arrange widgets in the layout
     menuLayout->addStretch();
     menuLayout->addWidget(titleLabel);
     menuLayout->addWidget(infoLabel);
     menuLayout->addWidget(startButton, 0, Qt::AlignCenter);
     menuLayout->addStretch();
 
-
+    // Style the menu widget
     menuWidget->setStyleSheet(
         "QPushButton {"
         "   background-color: #3498db;"
@@ -55,7 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
         "   font-size: 16px;"
         "}"
         "QPushButton:hover { background-color: #2980b9; }"
-    );
+        );
 
     // ---------- Tutorial Page UI Setup ----------
     QWidget *tutorialWidget = new QWidget(this);
@@ -94,7 +107,7 @@ MainWindow::MainWindow(QWidget *parent)
     goalLabel->setFont(QFont(goalLabel->font().family(), 14, QFont::Bold));
 
     QLabel *goalText = new QLabel("Put it later~", tutorialWidget);
-    goalText->setObjectName("goalText");  // Add this line to set the object name
+    goalText->setObjectName("goalText");  // Set object name for later access
     goalText->setWordWrap(true);
     goalText->setAlignment(Qt::AlignLeft);
 
@@ -130,9 +143,8 @@ MainWindow::MainWindow(QWidget *parent)
     tutorialLayout->addWidget(proceedButton, 0, Qt::AlignCenter);
     tutorialLayout->addStretch();
 
-
+    // Style the tutorial widget
     tutorialWidget->setStyleSheet(
-
         "QPushButton {"
         "   background-color: #3498db;"
         "   color: white;"
@@ -141,22 +153,23 @@ MainWindow::MainWindow(QWidget *parent)
         "   font-size: 16px;"
         "}"
         "QPushButton:hover { background-color: #2980b9; }"
-    );
+        );
 
     // ---------- Game Screen UI Setup ----------
     gameWidget = new WorldRenderer(this);
     connect(gameWidget->gameManager(), &GameManager::stateChanged,
             this, &MainWindow::handleGameStateChange);
 
-    // Add both screens to the stacked widget
-    m_stackWidget->addWidget(menuWidget);   // index 0: Main=Menu
-    m_stackWidget->addWidget(tutorialWidget);   // index 1: tutorial
-    m_stackWidget->addWidget(gameWidget);   // index 1: gamePlay
+    // Add all screens to the stacked widget
+    m_stackWidget->addWidget(menuWidget);     // index 0: Main Menu
+    m_stackWidget->addWidget(tutorialWidget); // index 1: Tutorial
+    m_stackWidget->addWidget(gameWidget);     // index 2: Game Play
 
     // Set window size and title
     resize(1200, 600);
     setWindowTitle("Save Sick Grandma");
 
+    // Initialize help button
     createHelpButton();
     updateHelpButtonVisibility(MainMenu);
 }
@@ -166,19 +179,19 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// Switch to game screen when "START" is clicked
 void MainWindow::startGame()
 {
+    // Reset game state
     gameWidget->resetGame();
 
-    // Now switch to tutorial
+    // Switch to tutorial screen
     m_stackWidget->setCurrentIndex(1);
     updateHelpButtonVisibility(Tutorial);
     updateTutorialForLevel(gameWidget->gameManager()->currentLevel());
-
 }
 
-void MainWindow::tutorialPage(){
+void MainWindow::tutorialPage() {
+    // Start game after tutorial
     gameWidget->resetGame();
     m_stackWidget->setCurrentIndex(2);
 }
@@ -187,8 +200,10 @@ void MainWindow::handleGameStateChange(GameState newState)
 {
     static bool showingPopup = false;
     updateHelpButtonVisibility(newState);
+
     switch(newState) {
     case GameOver:
+        // Prevent multiple popups from appearing simultaneously
         if (!showingPopup) {
             showingPopup = true;
             gameWidget->pauseGame();
@@ -199,14 +214,17 @@ void MainWindow::handleGameStateChange(GameState newState)
     case Level1:
     case Level2:
     case Level3:
+        // Resume gameplay for level states
         gameWidget->resumeGame();
         break;
     case MainMenu:
+        // Return to main menu
         gameWidget->pauseGame();
         m_stackWidget->setCurrentIndex(0);
         break;
     case GameClear:
-        if(!showingPopup){
+        // Show level completion popup
+        if (!showingPopup) {
             showingPopup = true;
             gameWidget->pauseGame();
             showGameClearPopup();
@@ -214,7 +232,7 @@ void MainWindow::handleGameStateChange(GameState newState)
         }
         break;
     case Tutorial:
-        // No change needed here
+        // No action needed for tutorial state
         break;
     }
 }
@@ -225,6 +243,7 @@ void MainWindow::showGameOverPopup()
     if (findChild<QDialog*>()) return;
 
     gameWidget->pauseGame();
+
     // Create a custom dialog
     QDialog *gameOverDialog = new QDialog(this);
     gameOverDialog->setWindowTitle("Game Over");
@@ -284,27 +303,30 @@ void MainWindow::showGameOverPopup()
         );
 
     // Show dialog modally
-    //gameWidget->pauseGame();  // Make sure to implement pauseGame() in WorldRenderer
     gameOverDialog->exec();
-    //gameWidget->resumeGame(); // Implement resumeGame()
 
+    // Ensure game remains paused
     gameWidget->pauseGame();
-    // Cleanup and return to menu
+
+    // Return to main menu
     m_stackWidget->setCurrentIndex(0);
     gameOverDialog->deleteLater();
 }
 
 void MainWindow::showGameClearPopup() {
+    // Prevent multiple dialogs
     if (findChild<QDialog*>()) return;
     gameWidget->pauseGame();
 
     int currentLevel = gameWidget->gameManager()->currentLevel();
     bool isMaxLevel = (currentLevel == 3);
 
+    // Create level clear dialog
     QDialog *gameClearDialog = new QDialog(this);
     gameClearDialog->setWindowTitle("Level " + QString::number(currentLevel) + " Clear");
     gameClearDialog->setMinimumSize(800, 600);
 
+    // Create layouts
     QVBoxLayout *mainLayout = new QVBoxLayout(gameClearDialog);
     QScrollArea *scrollArea = new QScrollArea(gameClearDialog);
     scrollArea->setWidgetResizable(true);
@@ -327,19 +349,20 @@ void MainWindow::showGameClearPopup() {
     scrollLayout->addWidget(scoreLabel);
     scrollLayout->addSpacing(20);
 
-    // Plants by level
+    // Plants header
     QLabel *plantsHeader = new QLabel("Medicinal Plants Collected:", scrollContent);
     plantsHeader->setFont(QFont(plantsHeader->font().family(), 16, QFont::Bold));
     scrollLayout->addWidget(plantsHeader);
     scrollLayout->addSpacing(10);
 
-    // Define all plants with their data
+    // Define plant data structure
     struct PlantData {
         QString name;
         QString description;
         QString imagePath;
     };
 
+    // Define all plants with their information
     QMap<QString, PlantData> allPlants = {
         {"Golden Currant", {
                                "Golden Currant",
@@ -401,7 +424,7 @@ void MainWindow::showGameClearPopup() {
     case 3: levelPlantNames = {"Golden Currant", "Mormon Tea", "Creosote Bush", "Osha", "Prairie Flax", "Prickly Pear Cactus"}; break;
     }
 
-    // Display plants
+    // Display plant information for each plant in this level
     for (const QString &plantName : levelPlantNames) {
         if (!allPlants.contains(plantName)) continue;
 
@@ -439,6 +462,7 @@ void MainWindow::showGameClearPopup() {
     nextButton->setFixedSize(150, 40);
     returnButton->setFixedSize(150, 40);
 
+    // Disable "Next Level" button on final level
     if (isMaxLevel) nextButton->setEnabled(false);
 
     buttonLayout->addStretch();
@@ -447,7 +471,7 @@ void MainWindow::showGameClearPopup() {
     buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
 
-    // Style
+    // Style the dialog
     gameClearDialog->setStyleSheet(
         "QDialog { background-color: #2c3e50; }"
         "QLabel { color: #ecf0f1; }"
@@ -463,19 +487,22 @@ void MainWindow::showGameClearPopup() {
         "QPushButton:hover { background-color: #2980b9; }"
         );
 
-    // Connections
+    // Connect button signals
     connect(returnButton, &QPushButton::clicked, gameClearDialog, &QDialog::reject);
     connect(nextButton, &QPushButton::clicked, gameClearDialog, &QDialog::accept);
 
+    // Show dialog and handle result
     int result = gameClearDialog->exec();
 
     if (result == QDialog::Rejected) {
+        // Return to main menu
         gameWidget->pauseGame();
         gameWidget->resetGame();
         gameWidget->gameManager()->startSpecificLevel(currentLevel);
         m_stackWidget->setCurrentIndex(0);
     }
     else if (result == QDialog::Accepted && !isMaxLevel) {
+        // Proceed to next level
         gameWidget->gameManager()->nextLevel();
         updateTutorialForLevel(gameWidget->gameManager()->currentLevel());
         m_stackWidget->setCurrentIndex(1);
@@ -490,6 +517,7 @@ void MainWindow::updateTutorialForLevel(int level) {
     QLabel* goalLabel = tutorialWidget->findChild<QLabel*>("goalText");
 
     if (goalLabel) {
+        // Update goal text based on current level
         switch (level) {
         case 1:
             goalLabel->setText("Level 1: Collect these healing herbs to help your grandmother:\n"
@@ -525,10 +553,12 @@ void MainWindow::updateTutorialForLevel(int level) {
     }
 }
 
-void MainWindow::createHelpButton(){
+void MainWindow::createHelpButton() {
+    // Create help button with question mark
     m_helpButton = new QPushButton("?", this);
-    m_helpButton->setFixedSize(40,40);
+    m_helpButton->setFixedSize(40, 40);
 
+    // Style the help button
     m_helpButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #3498db;"
@@ -546,15 +576,16 @@ void MainWindow::createHelpButton(){
         "}"
         );
 
-    // Position in top-right corner with some margin
+    // Position button and hide initially
     updateButtonPosition();
     m_helpButton->hide();
 
+    // Connect button to help dialog
     connect(m_helpButton, &QPushButton::clicked, this, &MainWindow::showHelpDialog);
 }
 
 void MainWindow::showHelpDialog() {
-    // Create the dialog
+    // Create the help dialog
     QDialog *helpDialog = new QDialog(this);
     helpDialog->setWindowTitle("Game Help");
     helpDialog->setWindowModality(Qt::WindowModal);
@@ -564,7 +595,7 @@ void MainWindow::showHelpDialog() {
     QVBoxLayout *layout = new QVBoxLayout(helpDialog);
     layout->setContentsMargins(20, 20, 20, 20);
 
-    // Get the appropriate help text
+    // Get help text based on current level
     int currentLevel = gameWidget->gameManager()->currentLevel();
     QString helpText;
 
@@ -646,20 +677,20 @@ void MainWindow::showHelpDialog() {
     helpDialog->deleteLater();
 }
 
-void MainWindow::updateHelpButtonVisibility(GameState state){
-    // Only show during gameplay levels, hide in all other states
+void MainWindow::updateHelpButtonVisibility(GameState state) {
+    // Only show help button during gameplay levels
     bool shouldShow = (state == Level1 || state == Level2 || state == Level3);
     m_helpButton->setVisible(shouldShow);
 
     if (shouldShow) {
-        m_helpButton->raise();
-        updateButtonPosition();
+        m_helpButton->raise();  // Ensure button is on top
+        updateButtonPosition(); // Position correctly
     }
 }
 
 void MainWindow::updateButtonPosition() {
     if (m_helpButton) {
-
+        // Center the button horizontally at the top of the window
         int xPos = (width() - m_helpButton->width()) / 2;
         m_helpButton->move(xPos, 20);
     }

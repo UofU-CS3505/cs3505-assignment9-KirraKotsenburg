@@ -1,33 +1,44 @@
+/**
+ * @file Vehicle.cpp
+ * @brief Implementation of the Vehicle class
+ *
+ * @author Jason Chang
+ *
+ * Checked by
+ */
+
 #include "vehicle.h"
 
 Vehicle::Vehicle(b2World &world, const b2Vec2 &position)
-    : m_chassis(nullptr), m_wheels{nullptr, nullptr}, m_wheelJoints{nullptr, nullptr}
-{
-    // --- Chassis ---
+    : m_chassis(nullptr), m_wheels{nullptr, nullptr}, m_wheelJoints{nullptr, nullptr} {
+
+    // Create Chassis
     b2BodyDef chassisBodyDef;
     chassisBodyDef.type = b2_dynamicBody;
     chassisBodyDef.position = position;
     chassisBodyDef.fixedRotation = true; // Fix the car from turning.
     m_chassis = world.CreateBody(&chassisBodyDef);
 
+    // Define chassis shape as a box
     b2PolygonShape chassisShape;
     chassisShape.SetAsBox(1.2f, 0.3f);
 
+    // Set physical properties for chassis
     b2FixtureDef chassisFixture;
     chassisFixture.shape = &chassisShape;
     chassisFixture.density = 1.5f;
     chassisFixture.friction = 1.0f;
     m_chassis->CreateFixture(&chassisFixture);
 
-    // --- Wheels ---
+    // --- Create Wheels ---
     float wheelRadius = 0.15f;       // Radius of the wheels
     float axleOffsetY = -0.4f;       // Vertical offset from the chassis to the axle
 
+    // Create left and right wheels
     for (int i = 0; i < 2; ++i) {    // Loop for left (0) and right (1) wheels
         b2BodyDef wheelBodyDef;
         wheelBodyDef.type = b2_dynamicBody;  // Wheels are dynamic (can move and rotate)
 
-        // Position the wheels on left (-0.9) and right (+0.9) relative to chassis
         wheelBodyDef.position = position + b2Vec2((i == 0 ? -0.9f : 0.9f), axleOffsetY);
 
         // Create the wheel body in the Box2D world
@@ -62,37 +73,32 @@ Vehicle::Vehicle(b2World &world, const b2Vec2 &position)
     }
 }
 
-void Vehicle::ApplyDriveForce(float force)
-{
+void Vehicle::applyDriveForce(float force) {
+    // Apply horizontal force to both wheels
     for (int i = 0; i < 2; ++i) {
         m_wheels[i]->ApplyForceToCenter(b2Vec2(force, 0.0f), true);
     }
 }
 
-void Vehicle::ApplySteering(float angle)
-{
-    // No-op: Steering not implemented in this model
-}
-
-b2Body* Vehicle::GetChassis() const
-{
+b2Body* Vehicle::getChassis() const {
     return m_chassis;
 }
 
-b2Body* Vehicle::GetWheel(int index) const
-{
+b2Body* Vehicle::getWheel(int index) const {
     return (index >= 0 && index < 2) ? m_wheels[index] : nullptr;
 }
 
-void Vehicle::Reset(const b2Vec2& position) {
-    const float forwardOffset = 2.0f;
+void Vehicle::reset(const b2Vec2& position) {
+
+    const float forwardOffset = 2.0f; // Offset for placing vehicle slightly forward
     b2Vec2 newPosition(position.x + forwardOffset, position.y);
 
-    // Reset chassis
+    // Reset chassis position and velocity
     m_chassis->SetTransform(newPosition, 0.0f);
     m_chassis->SetLinearVelocity(b2Vec2_zero);
     m_chassis->SetAngularVelocity(0.0f);
 
+    // Reset each whoeel position and velocity
     for (int i = 0; i < 2; ++i) {
         b2Vec2 wheelPos = newPosition;
         wheelPos.x += (i == 0 ? -0.9f : 0.9f);

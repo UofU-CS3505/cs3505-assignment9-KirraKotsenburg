@@ -1,3 +1,12 @@
+/**
+ * @file WorldRenderer.cpp
+ * @brief Implementation of the WorldRenderer class.
+ *
+ * @author Jason Chang
+ *
+ * Checked by
+ */
+
 #include "worldrenderer.h"
 #include "mainwindow.h"
 #include <QPainterPath>
@@ -13,18 +22,16 @@
 #include <QPointer>
 #include <random>
 
-WorldRenderer::WorldRenderer(QWidget *parent)
-    : QWidget(parent)
-    , m_physicsWorld(new PhysicsWorld(15)) // Limit to 15 hazards to prevent Box2D issues
-    , m_scale(50.0f) // 50 pixels per meter
-    , m_background(":/images/Plants/Images/background.jpg")
-{
+WorldRenderer::WorldRenderer(QWidget *parent) : QWidget(parent),
+                                                m_physicsWorld(new PhysicsWorld(15)), // Limit to 15 plants
+                                                m_scale(50.0f), // 50 pixels per meter
+                                                m_background(":/images/Plants/Images/background.jpg") {
     // Initialize GameManager
     m_gameManager = new GameManager(this);
 
     // Register custom contact listener to handle game logic on collisions
     m_contactListener = new GameContactListener(m_gameManager, m_physicsWorld);
-    m_physicsWorld->GetWorld().SetContactListener(m_contactListener);
+    m_physicsWorld->getWorld().SetContactListener(m_contactListener);
 
     // Configure and start a timer to refresh screen at ~60 FPS
     m_timer = new QTimer(this);
@@ -49,8 +56,6 @@ WorldRenderer::~WorldRenderer()
 
 void WorldRenderer::paintEvent(QPaintEvent *event)
 {
-
-
     Q_UNUSED(event);
     QPainter painter(this);
 
@@ -62,18 +67,12 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     painter.setBrush(Qt::NoBrush);
 
     // Camera follows the vehicle's chassis
-    Vehicle *vehicle = m_physicsWorld->GetVehicle();
-    b2Body *chassis = vehicle->GetChassis();
+    Vehicle *vehicle = m_physicsWorld->getVehicle();
+    b2Body *chassis = vehicle->getChassis();
     b2Vec2 camCenter = chassis->GetPosition();
     float cameraYOffset = 4.0f;
 
-    // this code is for centering camer
-    // auto worldToScreenCamera = [this, camCenter](const b2Vec2 &worldPos) -> QPointF {
-    //     return QPointF((worldPos.x - camCenter.x) * m_scale + width() / 2,
-    //                    height() / 2 - (worldPos.y - camCenter.y) * m_scale);
-    // };
-
-    // In this version, the car is positioned lower than the cente
+    // Define a lambda for world-to-screen conversion with camera offset
     auto worldToScreenCamera = [this, camCenter, cameraYOffset](const b2Vec2 &worldPos) -> QPointF {
         return QPointF((worldPos.x - camCenter.x) * m_scale + width() / 2,
                        height() / 2 - ((worldPos.y - camCenter.y - cameraYOffset) * m_scale));
@@ -96,7 +95,7 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     QVector<QPointF> upperPoints;
 
     // Get the list of bodies in the Box2D world
-    const auto& roadBody = m_physicsWorld->GetWorld().GetBodyList();
+    const auto& roadBody = m_physicsWorld->getWorld().GetBodyList();
 
     // Loop through all bodies in the world
     for (b2Body* body = roadBody; body; body = body->GetNext()) {
@@ -138,12 +137,14 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         filledRoadPath.lineTo(upperPoints.first());
     }
 
-    QBrush roadBrush(QColor(210, 180, 140));  // road fill color
+    // Draw the filled road
+    QBrush roadBrush(QColor(210, 180, 140));
 
     painter.setPen(Qt::NoPen);
     painter.setBrush(roadBrush);
     painter.drawPath(filledRoadPath);
 
+    // --- Draw House ---
     auto drawHouse = [&](QPainter& painter, const QPointF& screenPos) {
         painter.save();
 
@@ -173,7 +174,6 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         painter.restore();
     };
 
-
     float startX = 0.0f;
     float endX = 990.0f;
     float wallY = -1.0f;
@@ -183,8 +183,6 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     drawHouse(painter, leftHousePos);
     drawHouse(painter, rightHousePos);
-
-
 
     // --- Draw Vehicle ---
 
@@ -212,14 +210,9 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     painter.drawPath(CarBody);
     painter.restore();
 
-    // painter.setBrush(Qt::white);
-    // painter.setPen(Qt::NoPen);
-    // painter.drawPath(CarBody);
-    // painter.restore();
-
     // Wheels
     for (int i = 0; i < 2; ++i) {
-        b2Body *wheel = vehicle->GetWheel(i);
+        b2Body *wheel = vehicle->getWheel(i);
         QPointF wheelScreenPos = worldToScreenCamera(wheel->GetPosition());
         painter.save();
         painter.translate(wheelScreenPos);
@@ -245,8 +238,7 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         painter.restore();
     }
 
-    // --- Draw Hazards (Poisonous Plants) ---
-    // --- Draw Hazards (Plants) ---
+    // --- Draw Plants ---
     const auto &hazards = m_physicsWorld->getHazards();
     std::vector<Hazard*> herbsToRender;
     std::vector<Hazard*> poisonousToRender;
@@ -282,26 +274,26 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
         painter.rotate(angle * 180.0f / b2_pi);
         painter.scale(m_scale, m_scale);
 
-        // 🌱 C++ 표준 랜덤 엔진 (위치 기반 seed)
+        // Use position-based seed for deterministic randomness
         std::seed_seq seed{static_cast<int>(pos.x * 1000), static_cast<int>(pos.y * 1000)};
         std::mt19937 rng(seed);
         std::uniform_real_distribution<float> greenOffset(0, 80);
         std::uniform_real_distribution<float> ctrlOffset(-0.25f, 0.25f);
         std::uniform_real_distribution<float> tipJitter(0.0f, 0.3f);
 
-        // Pen 색상과 두께
+        // Set pen color and thickness for plant
         int green = 130 + static_cast<int>(greenOffset(rng));
         painter.setPen(QPen(QColor(0, green, 0), 0.05));
 
-        // 풀 설정
+        // Plant configuration
         int bladeCount = 13;
         float baseSpread = 0.1f;
-        float bladeHeight = 1.6f;  // 크기를 2/3로 줄인 버전
+        float bladeHeight = 1.6f;
 
         for (int i = -bladeCount / 2; i <= bladeCount / 2; ++i) {
             float offsetX = i * baseSpread;
             float ctrlX = offsetX * 0.5f + ctrlOffset(rng);
-            float tipY = bladeHeight + tipJitter(rng);  // 양수: 위로 뾰족하게 자람
+            float tipY = bladeHeight + tipJitter(rng);
 
             QPainterPath blade;
             blade.moveTo(offsetX, 0.0f);
@@ -313,7 +305,7 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     }
 
 
-    // --- Draw HUD (Health and Score) ---
+    // --- Draw HUD ---
     painter.resetTransform();
     painter.setPen(Qt::white);
     QFont font = painter.font();
@@ -354,45 +346,32 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
 }
 
-// --- Handle Key Presses ---
 void WorldRenderer::keyPressEvent(QKeyEvent *event)
 {
-    Vehicle *vehicle = m_physicsWorld->GetVehicle();
+    Vehicle *vehicle = m_physicsWorld->getVehicle();
 
     switch (event->key()) {
-    case Qt::Key_Up:
-        vehicle->ApplyDriveForce(60.0f);
-        break;
-    case Qt::Key_Down:
-        vehicle->ApplyDriveForce(-60.0f);
-        break;
     case Qt::Key_Left:
-        vehicle->ApplyDriveForce(-60.0f);
+        vehicle->applyDriveForce(-60.0f);
         break;
     case Qt::Key_Right:
-        vehicle->ApplyDriveForce(60.0f);
+        vehicle->applyDriveForce(60.0f);
         break;
     }
 }
 
-// --- Handle Key Releases ---
 void WorldRenderer::keyReleaseEvent(QKeyEvent *event)
 {
-    Vehicle *vehicle = m_physicsWorld->GetVehicle();
+    Vehicle *vehicle = m_physicsWorld->getVehicle();
 
     switch (event->key()) {
     case Qt::Key_Left:
     case Qt::Key_Right:
-        vehicle->ApplySteering(0.0f); // Reset steering
-        break;
-    case Qt::Key_Up:
-    case Qt::Key_Down:
-        vehicle->ApplyDriveForce(0.0f); // Stop driving
+        vehicle->applyDriveForce(0.0f); // Reset steering
         break;
     }
 }
 
-// Convert world coordinates to screen coordinates
 QPointF WorldRenderer::worldToScreen(float x, float y)
 {
     return QPointF(x * m_scale + width() / 2.0f, height() / 2.0f - y * m_scale);
@@ -402,7 +381,6 @@ QPointF WorldRenderer::worldToScreen(const b2Vec2 &position)
 {
     return worldToScreen(position.x, position.y);
 }
-
 
 void WorldRenderer::resetGame()
 {
@@ -414,7 +392,7 @@ void WorldRenderer::resetGame()
     m_physicsWorld = new PhysicsWorld(15);
     m_contactListener = new GameContactListener(m_gameManager, m_physicsWorld);
     // Set up contact listener again
-    m_physicsWorld->GetWorld().SetContactListener(m_contactListener);
+    m_physicsWorld->getWorld().SetContactListener(m_contactListener);
 
     connect(m_contactListener, &GameContactListener::plantContact, this, &WorldRenderer::showPlantPopup);
     // Reset game state
@@ -457,17 +435,17 @@ void WorldRenderer::updateGameState()
 
         try {
             // Process physics updates
-            m_physicsWorld->Step();
+            m_physicsWorld->step();
 
             // Process hazard removals after Step() completes
-            m_physicsWorld->ProcessRemovalQueue();
+            m_physicsWorld->processRemovalQueue();
 
             // Update game logic
             m_gameManager->update();
 
             // Check if vehicle reached the right house (game clear condition)
-            Vehicle *vehicle = m_physicsWorld->GetVehicle();
-            b2Vec2 vehiclePos = vehicle->GetChassis()->GetPosition();
+            Vehicle *vehicle = m_physicsWorld->getVehicle();
+            b2Vec2 vehiclePos = vehicle->getChassis()->GetPosition();
 
             // Right house position is at x=990.0f, y=-1.0f
             const float houseX = 990.0f;
@@ -495,8 +473,6 @@ void WorldRenderer::updateGameState()
     update();
 }
 
-// worldrenderer.cpp - modify showPlantPopup
-// Modified showPlantPopup to show description in the same dialog
 void WorldRenderer::showPlantPopup(Hazard* hazard) {
     QDialog* dialog = new QDialog;
     dialog->setWindowTitle("Plant Found");
@@ -598,6 +574,7 @@ void WorldRenderer::showPlantPopup(Hazard* hazard) {
 
     dialog->exec();
     resumeGame();
+
     // Clear up memory
     delete dialog;
 }
