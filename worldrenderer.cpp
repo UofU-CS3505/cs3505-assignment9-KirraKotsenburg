@@ -312,15 +312,11 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     font.setPointSize(14);
     painter.setFont(font);
 
-    // Draw health and score at top left
-    painter.drawText(10, 20, QString("Health: %1").arg(m_gameManager->health()));
-    painter.drawText(10, 40, QString("Score: %1").arg(m_gameManager->score()));
-
     // Draw plants to collect info
     QFont titleFont = font;
     titleFont.setBold(true);
     painter.setFont(titleFont);
-    painter.drawText(width() - 300, 20, "Collect all plants below to complete the game");
+    painter.drawText(10, 20, "Collect all plants below to complete the game");
 
     font.setBold(false);
     painter.setFont(font);
@@ -329,7 +325,7 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
     int yPos = 40;
     const auto& plants = m_gameManager->plantsToCollect();
     for (const auto& pair : plants) {
-        painter.drawText(width() - 300, yPos += 20,
+        painter.drawText(10, yPos += 20,
                          QString("%1 %2/%3").arg(pair.first)
                              .arg(pair.second.collected)
                              .arg(pair.second.total));
@@ -337,13 +333,12 @@ void WorldRenderer::paintEvent(QPaintEvent *event)
 
     // Show poisonous plants collected
     painter.setPen(Qt::red);
-    painter.drawText(width() - 300, yPos += 30,
+    painter.drawText(10, yPos += 30,
                      QString("Poison Collected: %1/%2")
                          .arg(m_gameManager->poisonousCollected())
                          .arg(m_gameManager->maxPoisonousAllowed()));
 
     painter.end();
-
 }
 
 void WorldRenderer::keyPressEvent(QKeyEvent *event)

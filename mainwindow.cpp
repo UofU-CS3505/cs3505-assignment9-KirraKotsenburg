@@ -262,13 +262,6 @@ void MainWindow::showGameOverPopup()
     titleFont.setBold(true);
     titleLabel->setFont(titleFont);
 
-    // Score display
-    QLabel *scoreLabel = new QLabel(QString("Final Score: %1").arg(gameWidget->gameManager()->score()), gameOverDialog);
-    scoreLabel->setAlignment(Qt::AlignCenter);
-    QFont scoreFont = scoreLabel->font();
-    scoreFont.setPointSize(18);
-    scoreLabel->setFont(scoreFont);
-
     // Message
     QLabel *messageLabel = new QLabel("Your grandma didn't make it!\nBetter luck next time!", gameOverDialog);
     messageLabel->setAlignment(Qt::AlignCenter);
@@ -283,7 +276,6 @@ void MainWindow::showGameOverPopup()
     layout->addStretch();
     layout->addWidget(titleLabel);
     layout->addSpacing(20);
-    layout->addWidget(scoreLabel);
     layout->addWidget(messageLabel);
     layout->addStretch();
     layout->addWidget(returnButton, 0, Qt::AlignCenter);
